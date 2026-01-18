@@ -1,0 +1,108 @@
+# Code Mapping
+
+Analyze this codebase and generate a structured map optimized for AI agent navigation. The map should enable an agent to locate relevant code quickly without exploring the filesystem.
+
+## Output Location
+
+Write the map to `docs/codemap.md`.
+
+- If the file already exists, update it to reflect the current codebase state.
+- If the file does not exist, create it.
+
+After writing the file, provide a brief summary in the chat:
+
+1. Whether this was a creation or update
+2. Key structural changes detected (if update)
+3. Assumptions made about module purposes or architecture (explicitly label uncertainty)
+
+## Output Format
+
+Generate a markdown document with these sections:
+
+### Architecture Overview (3-5 sentences)
+
+Describe the overall system: what it does, the architectural pattern (monolith, microservices, layered, etc.), and the primary technologies/frameworks.
+
+### Directory Structure
+
+```text
+project_root/
+├── dir_name/          # one-line purpose
+│   ├── subdir/        # one-line purpose
+```
+
+Only include directories containing source code or configuration. Skip generated files, caches, and vendor directories. Annotate each with its purpose.
+
+### Key Entry Points
+
+List the files where execution begins or where an agent should start reading to understand a feature:
+
+- `path/to/file.py` — what it initializes or controls
+
+### Module Responsibilities
+
+For each major module/package, provide:
+
+- **Purpose**: One sentence describing what this module owns
+- **Key files**: The 2-4 most important files and what they do
+- **Dependencies**: What other internal modules this one imports from
+- **Dependents**: What other internal modules import from this one
+
+If a module's purpose or role is unclear from code inspection, explicitly mark it as "uncertain" and explain what evidence is missing.
+
+### Domain Concepts → Code Locations
+
+Map domain concepts to their implementation locations. Otherwise, replace this section with **Feature → Code Locations**:
+
+| Concept | Primary Location | Notes |
+| - | - | - |
+| Neutron transport solver | `src/solvers/neutron_transport.py` | Discrete ordinates (SN) implementation |
+| Cross-section processing | `src/xs/` | ENDF parsing in `endf_reader.py`, group collapse in `collapse.py` |
+| Fuel depletion | `src/depletion/` | Bateman solver, interfaces with `src/nuclides/` |
+| Thermal-hydraulics coupling | `src/coupling/th_interface.py` | Adapter for external T/H codes |
+| Geometry definitions | `src/geometry/` | CSG primitives in `csg.py`, mesh in `mesh.py` |
+| Material compositions | `src/materials/material.py` | Nuclide densities, temperature-dependent properties |
+| Criticality search | `src/solvers/keff.py` | Power iteration, convergence diagnostics |
+
+### Conventions and Patterns
+
+Document recurring patterns an agent should follow:
+
+- Naming conventions (e.g., `*_solver.py` for solver classes)
+- Where new features should be added
+- How configuration is loaded
+- Error handling patterns
+- Testing patterns and where tests live relative to source
+
+### Cross-Cutting Concerns
+
+Identify where to find:
+
+- Logging setup
+- Shared utilities and helpers
+- Type definitions and constants
+- Global configuration
+- Unit conversions and physical constants (if applicable)
+
+### Search Anchors
+
+List high-value symbols (functions, classes, config keys, env vars) an agent can search for, with file paths.
+
+### Known Gotchas
+
+List non-obvious things that might trip up an agent:
+
+- Circular import risks
+- Files that look similar but serve different purposes
+- Legacy code that doesn't follow current conventions
+- Environment-specific behavior
+- Numerical precision pitfalls (if applicable)
+
+## Guidelines
+
+- Optimize for **navigation**, not documentation. Assume the agent can read the code once it knows where to look.
+- Be **concrete**: use actual file paths, not abstract descriptions.
+- Be **terse**: one line per item where possible.
+- **Omit** obvious things (e.g., don't document that `__init__.py` makes a directory a package).
+- **Prioritize** by importance: put the things an agent is most likely to need first.
+- If the codebase has a README or existing architecture docs, incorporate their information but reformat for agent consumption.
