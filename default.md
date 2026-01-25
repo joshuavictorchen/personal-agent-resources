@@ -17,7 +17,7 @@
 
 ## Codebase Navigation
 
-A structural map of this repository is maintained at `docs/codemap.md`. This file contains:
+If this repository has code in it, then a structural map is maintained at `docs/codemap.md`. This file contains:
 
 - Directory structure with purpose annotations
 - Module responsibilities and internal dependencies
@@ -26,7 +26,9 @@ A structural map of this repository is maintained at `docs/codemap.md`. This fil
 
 Treat `docs/codemap.md` as the authoritative navigation source.
 
-**Before exploring unfamiliar code**, read the relevant sections of `docs/codemap.md` to locate the right files on the first attempt. If the map appears missing or stale, state that explicitly before exploring the repository.
+**Before exploring unfamiliar code**, read the relevant sections of `docs/codemap.md` to locate the right files on the first attempt.
+
+If the map appears missing or stale, state that explicitly before exploring the repository.
 
 ## Development Philosophy
 
