@@ -1,3 +1,8 @@
+---
+name: map-code
+description: Analyzes this codebase and generates a structured map optimized for AI agent navigation. The map enables agents to locate relevant code quickly without exploring the filesystem.
+---
+
 # Code Mapping
 
 Analyze this codebase and generate a structured map optimized for AI agent navigation. The map should enable an agent to locate relevant code quickly without exploring the filesystem.

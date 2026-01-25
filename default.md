@@ -53,3 +53,7 @@ Treat `docs/codemap.md` as the authoritative navigation source.
 - Format with black
 - Test with pytest
 - Prefer type hints where they improve clarity
+
+## Markdown Preferences
+
+- Use `markdownlint` rules when formatting markdown files
