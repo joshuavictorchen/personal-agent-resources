@@ -20,6 +20,11 @@
 - Plan and spec files (usually in `docs/plan.md` and `docs/spec.md`) are not infallible
 - Challenge invalid or suboptimal directives; propose enhancements or simplifications where warranted
 
+## Execution
+
+- Never depend on persistent test fixtures outside of the repository for testing; always procedurally create them from tracked inputs
+- When creating temporary files or directories outside the repository (e.g., in `/tmp`), place them in a dedicated subdirectory named with a UUID or session identifier (e.g., `/tmp/agent-{uuid}/`) to avoid collisions with parallel processes; clean up after execution when feasible
+
 ## Codebase Navigation
 
 If this repository has code in it, then a structural map is maintained at `docs/codemap.md`. This file contains:
