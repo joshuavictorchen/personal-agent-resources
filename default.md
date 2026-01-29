@@ -15,6 +15,11 @@
 - Surface uncertainty early
 - End plans with unresolved questions, if any
 
+## Plan and Spec Files
+
+- Plan and spec files (usually in `docs/plan.md` and `docs/spec.md`) are not infallible
+- Challenge invalid or suboptimal directives; propose enhancements or simplifications where warranted
+
 ## Codebase Navigation
 
 If this repository has code in it, then a structural map is maintained at `docs/codemap.md`. This file contains:
@@ -53,7 +58,7 @@ If the map appears missing or stale, state that explicitly before exploring the 
 
 - Use Google-style docstrings for Python functions
 - Format with black
-- Test with pytest
+- Test with pytest and coverage
 - Prefer type hints where they improve clarity
 
 ## Markdown Preferences
