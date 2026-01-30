@@ -17,8 +17,14 @@ Write the map to `docs/codemap.md`.
 After writing the file, provide a brief summary in the chat:
 
 1. Whether this was a creation or update
-2. Key structural changes detected (if update)
+2. Key structural changes detected (if update). Focus on top-level additions/removals, not cosmetic diffs.
 3. Assumptions made about module purposes or architecture (explicitly label uncertainty)
+
+## Discovery and Filtering
+
+- Prefer `git ls-files` to enumerate files (tracked-only). If not a git repo, fall back to `rg --files`
+- Ignore common heavy/generated directories: `node_modules`, `dist`, `build`, `vendor`, `.venv`, `.git`, `__pycache__`, `target`, `.next`, `.cache`
+- If a directory contains both generated and source content, call that out in **Known Gotchas**
 
 ## Output Format
 
@@ -36,13 +42,18 @@ project_root/
 │   ├── subdir/        # one-line purpose
 ```
 
-Only include directories containing source code or configuration. Skip generated files, caches, and vendor directories. Annotate each with its purpose.
+Only include directories containing source code, configuration, infrastructure, and architecture-relevant docs. Skip generated files, caches, and vendor directories. Annotate each with its purpose.
+
+### Top-Level Files (Optional)
+
+If a few top-level files are critical for build/runtime or configuration, list them here (e.g., `pyproject.toml`, `package.json`, `go.mod`, `Dockerfile`, CI configs). Keep this short.
 
 ### Key Entry Points
 
 List the files where execution begins or where an agent should start reading to understand a feature:
 
 - `path/to/file.py` — what it initializes or controls
+- If entry points are framework-driven or dynamic, list the canonical start paths (e.g., framework config, routing, app factory) and note the indirection
 
 ### Module Responsibilities
 
@@ -50,8 +61,8 @@ For each major module/package, provide:
 
 - **Purpose**: One sentence describing what this module owns
 - **Key files**: The 2-4 most important files and what they do
-- **Dependencies**: What other internal modules this one imports from
-- **Dependents**: What other internal modules import from this one
+- **Dependencies**: What other internal modules this one imports from (if clearly inferable; otherwise mark uncertain)
+- **Dependents**: What other internal modules import from this one (if clearly inferable; otherwise mark uncertain)
 
 If a module's purpose or role is unclear from code inspection, explicitly mark it as "uncertain" and explain what evidence is missing.
 
@@ -68,6 +79,8 @@ Map domain concepts to their implementation locations. Otherwise, replace this s
 | Geometry definitions | `src/geometry/` | CSG primitives in `csg.py`, mesh in `mesh.py` |
 | Material compositions | `src/materials/material.py` | Nuclide densities, temperature-dependent properties |
 | Criticality search | `src/solvers/keff.py` | Power iteration, convergence diagnostics |
+
+Replace the example rows with actual repo concepts. Do not leave the sample entries in place.
 
 ### Conventions and Patterns
 
@@ -102,12 +115,16 @@ List non-obvious things that might trip up an agent:
 - Legacy code that doesn't follow current conventions
 - Environment-specific behavior
 - Numerical precision pitfalls (if applicable)
+- Multiple services or packages that look like one repo but are separate deployables
+- README/architecture docs that conflict with observed code structure
 
 ## Guidelines
 
 - Optimize for **navigation**, not documentation. Assume the agent can read the code once it knows where to look.
 - Be **concrete**: use actual file paths, not abstract descriptions.
 - Be **terse**: one line per item where possible.
+- Target size: **be concise yet complete**.
 - **Omit** obvious things (e.g., don't document that `__init__.py` makes a directory a package).
 - **Prioritize** by importance: put the things an agent is most likely to need first.
 - If the codebase has a README or existing architecture docs, incorporate their information but reformat for agent consumption.
+- Keep ordering stable (alphabetical within sections where it doesn't fight priority) to reduce churn between updates.
