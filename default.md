@@ -93,6 +93,16 @@ Anti-patterns to avoid:
 4. **`docs/context.md`** — user stories, motivation (non-normative)
 5. **`docs/architecture.md`** — as-built description (descriptive, not prescriptive)
 
+### When Documents Are Absent
+
+If the repository does not yet contain the documents described above:
+
+1. **Authority fallback:** User instructions are the sole authority source. Do not infer or invent missing specs, plans, or decisions.
+2. **Minimal assumptions:** State any assumptions explicitly. If ambiguity affects correctness or externally visible behavior, ask before proceeding.
+3. **Inline planning:** For non-trivial tasks, produce a brief inline plan and confirm before execution.
+
+**Bootstrap option:** If work would benefit from persistent documents (e.g., multi-session tasks, complex invariants), propose creating them and explain why.
+
 ### Spec Principles
 
 **Framing:** Binding contract, not narrative. Authority-first. Written for verification (pass/fail). Agent-readable—no inferred ambiguity.
