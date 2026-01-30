@@ -74,10 +74,12 @@ agent-config/
 | `CODEX_DIR` | `sync.sh` | Target path for Codex config |
 | `docs/codemap.md` | `default.md`, `skills/map-code/SKILL.md` | Expected codemap output location |
 | `docs/spec.md` | `default.md` | Spec file convention referenced in authority hierarchy |
+| `map-code` | `skills/map-code/SKILL.md` | Skill name in frontmatter (invoked as `/map-code`) |
+| `reflect` | `skills/reflect/SKILL.md` | Skill name in frontmatter (invoked as `/reflect`) |
 
 ## Known Gotchas
 
-- **Sync is destructive for skills**: `sync.sh` overwrites existing skill files in target directories; manually-added skills in `~/.claude/skills/` or `~/.codex/skills/` with the same name will be replaced
+- **Sync overwrites skills**: `sync.sh` overwrites existing skill files in target directories; manually-added skills in `~/.claude/skills/` or `~/.codex/skills/` with the same name will be replaced
 - **No validation**: `sync.sh` does not validate markdown syntax or skill frontmatter before copying
 - **Two consumers, one source**: Changes to `default.md` affect both Claude Code and Codex; tool-specific directives would require restructuring
 - **Skill invocation**: Skills are invoked by their frontmatter `name`, not directory name (e.g., `/reflect`, `/map-code`)

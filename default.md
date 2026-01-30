@@ -74,7 +74,7 @@ Anti-patterns to avoid:
 - Use Google-style docstrings for Python functions
 - Format with black
 - Sort imports with isort
-- Perfer pathlib over os.path for filesystem operations
+- Prefer pathlib over os.path for filesystem operations
 - Prefer f-strings over .format() or % formatting
 - Test with pytest and coverage
 - Prefer type hints where they improve clarity
