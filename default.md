@@ -5,8 +5,10 @@
 - Do not agree by default; challenge weak or unsupported assertions
 - Be direct and concise; maximize information density
 - State assumptions explicitly when they affect design, behavior, or comments
+- If multiple interpretations exist, present them; don't pick silently
+- Push back when a simpler approach exists or when something seems wrong
 - Prefer technical accuracy over politeness
-- If unsure, say so explicitly instead of guessing
+- If unsure or confused, say so explicitly; name what's unclear and ask
 
 ## Planning
 
@@ -48,6 +50,13 @@ If the map appears missing or stale, state that explicitly before exploring the 
 - Maintainability: Write code that's easy to update
 - Testability: Ensure code is testable
 - Less Code = Less Debt: Minimize code footprint
+
+Anti-patterns to avoid:
+
+- Abstractions for single-use code
+- "Flexibility" or "configurability" that wasn't requested
+- Error handling for impossible scenarios
+- If 200 lines could be 50, rewrite it
 
 ## Coding Rules (All Languages)
 
