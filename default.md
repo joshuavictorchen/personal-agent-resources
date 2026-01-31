@@ -17,16 +17,6 @@
 - Surface uncertainty early
 - End plans with unresolved questions, if any
 
-## Plan and Spec Files
-
-- Plan and spec files (usually in `docs/plan.md` and `docs/spec.md`) are not infallible
-- Challenge invalid or suboptimal directives; propose enhancements or simplifications where warranted
-
-## Execution
-
-- Never depend on persistent test fixtures outside of the repository for testing; always procedurally create them from tracked inputs
-- When creating temporary files or directories outside the repository (e.g., in `/tmp`), place them in a dedicated subdirectory named with a UUID or session identifier (e.g., `/tmp/agent-{uuid}/`) to avoid collisions with parallel processes; clean up after execution when feasible
-
 ## Codebase Navigation
 
 If `docs/codemap.md` exists, it is the authoritative navigation source for this repository and describes:
@@ -37,11 +27,9 @@ If `docs/codemap.md` exists, it is the authoritative navigation source for this 
 - Conventions and known gotchas
 
 When present: before exploring unfamiliar code, consult the relevant sections of `docs/codemap.md` to locate the correct files on the first attempt.
-If any referenced path does not exist or conflicts with observed structure, treat the codemap as potentially stale and fall back to direct exploration.
+If any referenced path does not exist or conflicts with observed structure, or if a codemap exists but appears stale or incomplete, state that explicitly before continuing.
 
 When absent: proceed with direct code exploration. Do not attempt to infer, reconstruct, or require a codemap.
-
-If a codemap exists but appears stale or incomplete, state that explicitly before continuing.
 
 ## Development Philosophy
 
@@ -83,7 +71,12 @@ Anti-patterns to avoid:
 
 - Use `markdownlint` rules when creating or editing Markdown files
 
-## Document Authority & Agent Rules
+## Execution Guardrails
+
+- Never depend on persistent test fixtures outside of the repository for testing; always procedurally create them from tracked inputs
+- When creating temporary files or directories outside the repository (e.g., in `/tmp`), place them in a dedicated subdirectory named with a UUID or session identifier (e.g., `/tmp/agent-{uuid}/`) to avoid collisions with parallel processes; clean up after execution when feasible
+
+## Document Authority and Roles
 
 ### Authority (Highest → Lowest)
 
@@ -92,6 +85,17 @@ Anti-patterns to avoid:
 3. **`docs/plans/*`** — slice-specific implementation intent (ephemeral)
 4. **`docs/context.md`** — user stories, motivation (non-normative)
 5. **`docs/architecture.md`** — as-built description (descriptive, not prescriptive)
+
+## Document Consumption
+
+| Document | When to read |
+| -------- | ------------ |
+| `context.md` | Session start; revisit to understand intent or justify proposals when spec is silent |
+| `spec.md` | Before implementation; reference during; verify compliance after (defines all testable behavior) |
+| `decisions/*` | When a constraint seems wrong or before proposing changes |
+| `plans/*` | Active plan for current work only |
+| `codemap.md` | Navigating unfamiliar code; locating domain concepts |
+| `architecture.md` | Session start for design context; when proposing structural changes; when constraints feel arbitrary |
 
 ### When Documents Are Absent
 
@@ -123,7 +127,11 @@ If the repository does not yet contain the documents described above:
 | `decisions/*` | Explains *why* | Revise freely; promote to spec if correctness-critical |
 | `plans/*` | Explains *how right now* | Discard/rewrite freely; move to `inactive/` when done |
 | `context.md` | Explains *who/why exists* | Informs spec, never defines behavior |
-| `architecture.md` | Explains *what exists* | Descriptive only; divergence = outdated doc or wrong code |
+| `codemap.md` | Navigation map: structure, modules, locators | Regenerate freely; divergence = stale map |
+| `architecture.md` | Intentional design: boundaries, data flow, invariants | Update on design changes; divergence = known debt or wrong code |
+
+- Spec and plan files are not infallible.
+- Challenge invalid or suboptimal directives; propose enhancements or simplifications where warranted.
 
 ### Spec Change Protocol
 
@@ -136,6 +144,12 @@ If the repository does not yet contain the documents described above:
 4. Document outcome in `docs/decisions/*`.
 
 > Spec is append-mostly. Removing/weakening a requirement is breaking.
+
+### Architecture Doc Maintenance
+
+**Trigger:** Does this change affect how components relate—boundaries, interfaces, data flow, cross-cutting concerns (config/logging/errors), or invariants? If purely internal to one component, no update needed.
+
+**On conflict:** Never silently rewrite. State mismatch → clarify intent → update doc or code. Record design changes in `docs/decisions/*`.
 
 ### Agent Rules
 

@@ -24,13 +24,13 @@ After writing the file, provide a brief summary in the chat:
 
 - Prefer `git ls-files` to enumerate files (tracked-only). If not a git repo, fall back to `rg --files`
 - Ignore common heavy/generated directories: `node_modules`, `dist`, `build`, `vendor`, `.venv`, `.git`, `__pycache__`, `target`, `.next`, `.cache`
-- If a directory contains both generated and source content, call that out in **Known Gotchas**
+- If a directory contains both generated and source content, note that in **Known Gotchas**
 
 ## Output Format
 
-Generate a markdown document with these sections:
+Generate a markdown document with these sections. **Omit any section that would be empty or trivial for the codebase.**
 
-### Architecture Overview (3-5 sentences)
+### Overview (3-5 sentences)
 
 Describe the overall system: what it does, the architectural pattern (monolith, microservices, layered, etc.), and the primary technologies/frameworks.
 
@@ -44,7 +44,7 @@ project_root/
 
 Only include directories containing source code, configuration, infrastructure, and architecture-relevant docs. Skip generated files, caches, and vendor directories. Annotate each with its purpose.
 
-### Top-Level Files (Optional)
+### Top-Level Files
 
 If a few top-level files are critical for build/runtime or configuration, list them here (e.g., `pyproject.toml`, `package.json`, `go.mod`, `Dockerfile`, CI configs). Keep this short.
 
@@ -57,7 +57,7 @@ List the files where execution begins or where an agent should start reading to 
 
 ### Module Responsibilities
 
-For each major module/package, provide:
+For each major module/package:
 
 - **Purpose**: One sentence describing what this module owns
 - **Key files**: The 2-4 most important files and what they do
@@ -84,7 +84,7 @@ Replace the example rows with actual repo concepts. Do not leave the sample entr
 
 ### Conventions and Patterns
 
-Document recurring patterns an agent should follow:
+Recurring patterns an agent should follow:
 
 - Naming conventions (e.g., `*_solver.py` for solver classes)
 - Where new features should be added
@@ -94,13 +94,7 @@ Document recurring patterns an agent should follow:
 
 ### Cross-Cutting Concerns
 
-Identify where to find:
-
-- Logging setup
-- Shared utilities and helpers
-- Type definitions and constants
-- Global configuration
-- Unit conversions and physical constants (if applicable)
+Where to find: logging, shared utilities, type definitions, constants, global configuration.
 
 ### Search Anchors
 
