@@ -1,6 +1,6 @@
 # Codemap
 
-## Architecture Overview
+## Overview
 
 This repository is a configuration hub for AI coding agents (Claude Code and OpenAI Codex). It contains shared behavioral directives and reusable skill definitions that get synced to each tool's config directory. The architecture is flat—a collection of markdown files with a single shell script for deployment. No runtime code; purely declarative configuration.
 
@@ -10,8 +10,9 @@ This repository is a configuration hub for AI coding agents (Claude Code and Ope
 agent-config/
 ├── docs/              # documentation (this file)
 ├── skills/            # reusable skill definitions
-│   ├── map-code/      # codebase mapping skill
-│   └── reflect/       # session retrospective skill
+│   ├── maintain-architecture/  # architecture documentation skill
+│   ├── map-code/               # codebase mapping skill
+│   └── reflect/                # session retrospective skill
 ```
 
 ## Top-Level Files
@@ -29,6 +30,13 @@ agent-config/
 - `skills/*/SKILL.md` — each skill's definition and trigger conditions
 
 ## Module Responsibilities
+
+### `skills/maintain-architecture/`
+
+- **Purpose**: Defines a skill that creates or updates `docs/architecture.md` to capture intentional system design
+- **Key files**: `SKILL.md` — skill metadata, process steps, and output template for architecture docs
+- **Dependencies**: None
+- **Dependents**: None (consumed by agents at runtime)
 
 ### `skills/map-code/`
 
@@ -49,10 +57,11 @@ agent-config/
 | Feature | Primary Location | Notes |
 | ------- | ---------------- | ----- |
 | Agent behavior directives | `default.md` | Communication, planning, execution, coding rules |
-| Skill definitions | `skills/*/SKILL.md` | YAML frontmatter + markdown body |
-| Config deployment | `sync.sh` | Copies to `~/.claude/` and `~/.codex/` |
+| Architecture documentation | `skills/maintain-architecture/SKILL.md` | Creates/updates `docs/architecture.md` |
 | Codebase mapping | `skills/map-code/SKILL.md` | Generates navigation maps for repos |
+| Config deployment | `sync.sh` | Copies to `~/.claude/` and `~/.codex/` |
 | Session retrospectives | `skills/reflect/SKILL.md` | Structured feedback at session end |
+| Skill definitions | `skills/*/SKILL.md` | YAML frontmatter + markdown body |
 
 ## Conventions and Patterns
 
@@ -72,14 +81,16 @@ agent-config/
 | ------ | ---- | ------- |
 | `CLAUDE_DIR` | `sync.sh` | Target path for Claude Code config |
 | `CODEX_DIR` | `sync.sh` | Target path for Codex config |
+| `docs/architecture.md` | `default.md`, `skills/maintain-architecture/SKILL.md` | Expected architecture doc location |
 | `docs/codemap.md` | `default.md`, `skills/map-code/SKILL.md` | Expected codemap output location |
 | `docs/spec.md` | `default.md` | Spec file convention referenced in authority hierarchy |
-| `map-code` | `skills/map-code/SKILL.md` | Skill name in frontmatter (invoked as `/map-code`) |
-| `reflect` | `skills/reflect/SKILL.md` | Skill name in frontmatter (invoked as `/reflect`) |
+| `maintain-architecture` | `skills/maintain-architecture/SKILL.md` | Skill name (invoked as `/maintain-architecture`) |
+| `map-code` | `skills/map-code/SKILL.md` | Skill name (invoked as `/map-code`) |
+| `reflect` | `skills/reflect/SKILL.md` | Skill name (invoked as `/reflect`) |
 
 ## Known Gotchas
 
 - **Sync overwrites skills**: `sync.sh` overwrites existing skill files in target directories; manually-added skills in `~/.claude/skills/` or `~/.codex/skills/` with the same name will be replaced
 - **No validation**: `sync.sh` does not validate markdown syntax or skill frontmatter before copying
 - **Two consumers, one source**: Changes to `default.md` affect both Claude Code and Codex; tool-specific directives would require restructuring
-- **Skill invocation**: Skills are invoked by their frontmatter `name`, not directory name (e.g., `/reflect`, `/map-code`)
+- **Skill invocation**: Skills are invoked by their frontmatter `name`, not directory name (e.g., `/reflect`, `/map-code`, `/maintain-architecture`)

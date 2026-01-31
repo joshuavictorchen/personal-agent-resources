@@ -56,6 +56,10 @@ Write to `docs/architecture.md`. Update in place, preserving existing headings/o
 
 ## Output Format
 
+**Small projects (≤20 source files or single-component systems):** Use a minimal template with only Overview, Key Invariants (if any), and Known Debt. Omit Component Boundaries, Data Flow, Cross-Cutting Concerns, Open Questions, and Change History unless they provide clear value.
+
+**Larger projects:** Use the full template below.
+
 ```markdown
 # Architecture
 

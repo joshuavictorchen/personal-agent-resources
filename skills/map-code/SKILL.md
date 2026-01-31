@@ -71,16 +71,11 @@ If a module's purpose or role is unclear from code inspection, explicitly mark i
 Map domain concepts to their implementation locations. Otherwise, replace this section with **Feature → Code Locations**:
 
 | Concept | Primary Location | Notes |
-| - | - | - |
-| Neutron transport solver | `src/solvers/neutron_transport.py` | Discrete ordinates (SN) implementation |
-| Cross-section processing | `src/xs/` | ENDF parsing in `endf_reader.py`, group collapse in `collapse.py` |
-| Fuel depletion | `src/depletion/` | Bateman solver, interfaces with `src/nuclides/` |
-| Thermal-hydraulics coupling | `src/coupling/th_interface.py` | Adapter for external T/H codes |
-| Geometry definitions | `src/geometry/` | CSG primitives in `csg.py`, mesh in `mesh.py` |
-| Material compositions | `src/materials/material.py` | Nuclide densities, temperature-dependent properties |
-| Criticality search | `src/solvers/keff.py` | Power iteration, convergence diagnostics |
+| ------- | ---------------- | ----- |
+| *[Domain concept A]* | *[src/module_a/]* | *[Brief note]* |
+| *[Domain concept B]* | *[src/module_b/file.py]* | *[Brief note]* |
 
-Replace the example rows with actual repo concepts. Do not leave the sample entries in place.
+Replace these placeholder rows with actual domain concepts from the repository.
 
 ### Conventions and Patterns
 

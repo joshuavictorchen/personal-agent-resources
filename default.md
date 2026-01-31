@@ -78,24 +78,17 @@ Anti-patterns to avoid:
 
 ## Document Authority and Roles
 
-### Authority (Highest → Lowest)
+| Document | Role | Authority | When to Read | Mutability |
+| -------- | ---- | --------- | ------------ | ---------- |
+| `spec.md` | Normative contract (what MUST be true) | 1 (highest) | Before implementation; reference during; verify compliance after | Update explicitly on conflict |
+| `decisions/*` | Explains *why*; rationale for constraints | 2 | When a constraint seems wrong or before proposing changes | Revise freely; promote to spec if correctness-critical |
+| `plans/*` | Explains *how right now*; slice-specific intent | 3 | Active plan for current work only | Discard/rewrite freely; move to `inactive/` when done |
+| `context.md` | Explains *who/why exists*; user stories, motivation | 4 | Session start; revisit when spec is silent | Informs spec, never defines behavior |
+| `architecture.md` | Intentional design: boundaries, data flow, invariants | 5 | Session start; when proposing structural changes | Update on design changes; divergence = known debt or wrong code |
+| `codemap.md` | Navigation map: structure, modules, locators | — | Navigating unfamiliar code; locating domain concepts | Regenerate freely; divergence = stale map |
 
-1. **`docs/spec.md`** — normative contract (what MUST be true)
-2. **`docs/decisions/*`** — rationale for constraints (non-normative)
-3. **`docs/plans/*`** — slice-specific implementation intent (ephemeral)
-4. **`docs/context.md`** — user stories, motivation (non-normative)
-5. **`docs/architecture.md`** — as-built description (descriptive, not prescriptive)
-
-## Document Consumption
-
-| Document | When to read |
-| -------- | ------------ |
-| `context.md` | Session start; revisit to understand intent or justify proposals when spec is silent |
-| `spec.md` | Before implementation; reference during; verify compliance after (defines all testable behavior) |
-| `decisions/*` | When a constraint seems wrong or before proposing changes |
-| `plans/*` | Active plan for current work only |
-| `codemap.md` | Navigating unfamiliar code; locating domain concepts |
-| `architecture.md` | Session start for design context; when proposing structural changes; when constraints feel arbitrary |
+- Specs override plans, code, and assumptions.
+- Spec and plan files are not infallible. Challenge invalid or suboptimal directives; propose enhancements or simplifications where warranted.
 
 ### When Documents Are Absent
 
@@ -119,20 +112,6 @@ If the repository does not yet contain the documents described above:
 
 **Undefined behavior:** If behavior is not specified, it is undefined and must not be assumed.
 
-### Document Roles
-
-| Document | Role | Mutability |
-| -------- | ---- | ---------- |
-| `spec.md` | Defines behavior | Update explicitly on conflict |
-| `decisions/*` | Explains *why* | Revise freely; promote to spec if correctness-critical |
-| `plans/*` | Explains *how right now* | Discard/rewrite freely; move to `inactive/` when done |
-| `context.md` | Explains *who/why exists* | Informs spec, never defines behavior |
-| `codemap.md` | Navigation map: structure, modules, locators | Regenerate freely; divergence = stale map |
-| `architecture.md` | Intentional design: boundaries, data flow, invariants | Update on design changes; divergence = known debt or wrong code |
-
-- Spec and plan files are not infallible.
-- Challenge invalid or suboptimal directives; propose enhancements or simplifications where warranted.
-
 ### Spec Change Protocol
 
 1. **Never silently deviate.** Code matches current spec until spec is updated.
@@ -153,7 +132,6 @@ If the repository does not yet contain the documents described above:
 
 ### Agent Rules
 
-- Specs override plans, code, and assumptions.
 - If a document is used outside its role, stop and reassess.
 - When in doubt, ask before acting.
 
