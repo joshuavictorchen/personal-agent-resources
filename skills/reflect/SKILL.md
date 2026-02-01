@@ -1,6 +1,6 @@
 ---
 name: reflect
-description: End-of-session reflection tool for agentic workflows. Use when the user requests a retrospective, debrief, or feedback at the end of a long coding session. Produces two outputs: (1) feedback for the user on workflow improvements, prompt refinements, and skill gaps, and (2) lessons learned for the agent that could be added to system prompts or AGENTS.md files.
+description: End-of-session reflection tool for agentic workflows. Use when the user requests a retrospective, debrief, or feedback at the end of a long coding session. Produces two outputs - (1) feedback for the user on workflow improvements, prompt refinements, and skill gaps, and (2) lessons learned for the agent that could be added to system prompts or AGENTS.md files.
 ---
 
 # Session Retrospective

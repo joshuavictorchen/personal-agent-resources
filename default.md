@@ -7,7 +7,7 @@
 - State assumptions explicitly when they affect design, behavior, or comments
 - If multiple interpretations exist, present them; don't pick silently
 - Push back when a simpler approach exists or when something seems wrong
-- Prefer technical accuracy over politeness
+- Prefer clarity over hedging; directness over padding
 - If unsure or confused, say so explicitly; name what's unclear and ask
 
 ## Planning
@@ -17,35 +17,40 @@
 - Surface uncertainty early
 - End plans with unresolved questions, if any
 
+**Before finalizing a plan:** Does every step have clear completion criteria? Are dependencies between steps explicit? What could go wrong?
+
 ## Codebase Navigation
 
-If `docs/codemap.md` exists, it is the authoritative navigation source for this repository and describes:
+When `docs/codemap.md` exists, consult it early. Treat it as a guide, not infallible truth.
 
-- Directory structure with purpose annotations
-- Module responsibilities and internal dependencies
-- Domain concept → code location mappings
-- Conventions and known gotchas
+If documentation conflicts with observed code or structure, trust the code and flag the discrepancy.
 
-When present: before exploring unfamiliar code, consult the relevant sections of `docs/codemap.md` to locate the correct files on the first attempt.
-If any referenced path does not exist or conflicts with observed structure, or if a codemap exists but appears stale or incomplete, state that explicitly before continuing.
-
-When absent: proceed with direct code exploration. Do not attempt to infer, reconstruct, or require a codemap.
+When no navigation aids exist, proceed with direct exploration. Do not invent missing documentation.
 
 ## Development Philosophy
 
 - Simplicity: Write simple, straightforward code
 - Readability: Make code easy to understand
-- Performance: Consider performance without sacrificing readability
+- Performance: Consider performance without sacrificing clarity
 - Maintainability: Write code that's easy to update
 - Testability: Ensure code is testable
-- Less Code = Less Debt: Minimize code footprint unless the reduction sacrifices readability
+- Less Code = Less Debt: Reduce footprint unless doing so harms readability or correctness
 
 Anti-patterns to avoid:
 
 - Abstractions for single-use code (e.g., creating a base class or factory for a single implementation)
 - "Flexibility" or "configurability" that wasn't requested
 - Error handling for impossible scenarios
+- Clever one-liners that require mental unpacking
 - If 200 lines could be 50 without sacrificing clarity, rewrite it
+
+### Demand Elegance
+
+- For non-trivial changes, pause before finalizing and ask: "Is there a more elegant way?"
+- If a solution feels hacky or forced, step back: "Knowing everything I know now, what's the clean implementation?" Then build that instead.
+- Challenge your own work before presenting it.
+
+**Guardrail:** "Elegance" must reduce objective complexity: fewer moving parts, clearer invariants, reduced coupling, simpler interfaces, or better testability. Avoid aesthetic-only rewrites.
 
 ## Coding Rules (All Languages)
 
@@ -69,25 +74,35 @@ Anti-patterns to avoid:
 
 ## Markdown Preferences
 
-- Use `markdownlint` rules when creating or editing Markdown files
-- Remember MD060/table-column-style for table syntax, e.g. `| --- |` instead of `|-----|`
-- Remember MD032/blanks-around-lists: Lists should be surrounded by blank lines
+- Follow `markdownlint` rules when creating or editing Markdown files
+
+**Before finalizing Markdown:** Verify blank lines surround all lists (MD032), tables use `| --- |` column syntax (MD060), and no trailing whitespace exists.
 
 ## Execution Guardrails
 
 - Never depend on persistent test fixtures outside of the repository for testing; always procedurally create them from tracked inputs
 - When creating temporary files or directories outside the repository (e.g., in `/tmp`), place them in a dedicated subdirectory named with a UUID or session identifier (e.g., `/tmp/agent-{uuid}/`) to avoid collisions with parallel processes; clean up after execution when feasible
 
+## Task Completion
+
+Never mark a task complete without demonstrating it works:
+
+- Run tests; confirm they pass
+- Check logs and output for warnings or errors
+- Prove correctness; don't just technically complete the checklist
+
+**Before marking done:** "Would a staff engineer approve this?" If not, it's not done.
+
 ## Document Authority and Roles
 
 | Document | Role | Authority | When to Read | Mutability |
-| -------- | ---- | --------- | ------------ | ---------- |
-| `spec.md` | Normative contract (what MUST be true) | 1 (highest) | Before implementation; reference during; verify compliance after | Update explicitly on conflict |
-| `decisions/*` | Explains *why*; rationale for constraints | 2 | When a constraint seems wrong or before proposing changes | Revise freely; promote to spec if correctness-critical |
-| `plans/*` | Explains *how right now*; slice-specific intent | 3 | Active plan for current work only | Discard/rewrite freely; move to `inactive/` when done |
-| `context.md` | User stories, motivation, auxiliary information | 4 | Session start; revisit when spec is silent | Informs spec and motivation behind behavior |
-| `architecture.md` | Intentional design: boundaries, data flow, invariants | 5 | Session start; when proposing structural changes | Update on design changes; divergence = known debt or wrong code |
-| `codemap.md` | Navigation map: structure, modules, locators | — | Navigating unfamiliar code; locating domain concepts | Regenerate freely; divergence = stale map |
+| --- | --- | --- | --- | --- |
+| `docs/spec.md` | Normative contract (what MUST be true) | 1 (highest) | Before implementation; reference during; verify compliance after | Update explicitly on conflict |
+| `docs/decisions/*` | Explains *why*; rationale for constraints | 2 | When a constraint seems wrong or before proposing changes | Revise freely; promote to spec if correctness-critical |
+| `docs/plans/*` | Explains *how right now*; slice-specific intent | 3 | Active plan for current work only | Discard/rewrite freely; move to `inactive/` when done |
+| `docs/context.md` | User stories, motivation, auxiliary information | 4 | Session start; revisit when spec is silent | Informs spec and motivation behind behavior |
+| `docs/architecture.md` | Intentional design: boundaries, data flow, invariants | 5 | Session start; when proposing structural changes | Update on design changes; divergence = known debt or wrong code |
+| `docs/codemap.md` | Navigation map: structure, modules, locators | — | Navigating unfamiliar code; locating domain concepts | Regenerate freely; divergence = stale map |
 
 - Specs override plans, code, and assumptions.
 - Spec and plan files are not infallible. Challenge invalid or suboptimal directives; propose enhancements or simplifications where warranted.
@@ -104,13 +119,19 @@ If the repository does not yet contain the documents described above:
 
 ### Spec Principles
 
-**Framing:** Binding contract, not narrative. Authority-first. Written for verification (pass/fail). Agent-readable—no inferred ambiguity.
+**Framing:** Binding contract, not narrative. Written for verification (pass/fail). Agent-readable—no inferred ambiguity.
 
 **Must include:** Scope boundaries · Normative requirements (MUST/MUST NOT/SHOULD/MAY) · Invariants · Contract surfaces (APIs, schemas, formats) · Error semantics · Behavioral examples (illustrative unless marked exhaustive) · Acceptance criteria
 
 **Must avoid:** Implementation details · Execution plans · Duplicate truth sources · Vague terms ("fast", "robust") · Speculative features · Implicit assumptions
 
-**Litmus test:** Two independent implementations from the spec alone must behave identically.
+**Recognizing violations:**
+
+- *Implementation detail:* internal module, class, or function names not part of the public contract; file paths; data structures that aren't contract surfaces (API shapes, schemas, formats)
+- *Speculative feature:* "could", "might", "potentially", "in the future", "eventually"
+- *Presentation leak:* specifying HOW something is displayed rather than WHAT it communicates (unless visual form is itself the requirement)
+
+**Litmus test:** Could two different implementations satisfy this spec? If the spec forces one specific implementation, it's over-specified.
 
 **Undefined behavior:** If behavior is not specified, it is undefined and must not be assumed.
 
