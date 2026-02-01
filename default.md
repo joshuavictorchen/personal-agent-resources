@@ -70,6 +70,8 @@ Anti-patterns to avoid:
 ## Markdown Preferences
 
 - Use `markdownlint` rules when creating or editing Markdown files
+- Remember MD060/table-column-style for table syntax, e.g. `| --- |` instead of `|-----|`
+- Remember MD032/blanks-around-lists: Lists should be surrounded by blank lines
 
 ## Execution Guardrails
 
@@ -83,7 +85,7 @@ Anti-patterns to avoid:
 | `spec.md` | Normative contract (what MUST be true) | 1 (highest) | Before implementation; reference during; verify compliance after | Update explicitly on conflict |
 | `decisions/*` | Explains *why*; rationale for constraints | 2 | When a constraint seems wrong or before proposing changes | Revise freely; promote to spec if correctness-critical |
 | `plans/*` | Explains *how right now*; slice-specific intent | 3 | Active plan for current work only | Discard/rewrite freely; move to `inactive/` when done |
-| `context.md` | Explains *who/why exists*; user stories, motivation | 4 | Session start; revisit when spec is silent | Informs spec, never defines behavior |
+| `context.md` | User stories, motivation, auxiliary information | 4 | Session start; revisit when spec is silent | Informs spec and motivation behind behavior |
 | `architecture.md` | Intentional design: boundaries, data flow, invariants | 5 | Session start; when proposing structural changes | Update on design changes; divergence = known debt or wrong code |
 | `codemap.md` | Navigation map: structure, modules, locators | — | Navigating unfamiliar code; locating domain concepts | Regenerate freely; divergence = stale map |
 
