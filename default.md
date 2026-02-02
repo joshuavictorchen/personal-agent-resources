@@ -76,7 +76,12 @@ Anti-patterns to avoid:
 
 - Follow `markdownlint` rules when creating or editing Markdown files
 
-**Before finalizing Markdown:** Verify blank lines surround all lists (MD032), tables use `| --- |` column syntax (MD060), and no trailing whitespace exists.
+**Before finalizing Markdown:**
+
+- Verify fenced code blocks are surrounded by blank lines (MD031)
+- Verify blank lines surround all lists (MD032)
+- Verify fenced code blocks have a language specified (MD040)
+- Verify tables use `| --- |` column syntax (MD060), and no trailing whitespace exists (MD060)
 
 ## Execution Guardrails
 
