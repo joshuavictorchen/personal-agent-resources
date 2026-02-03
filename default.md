@@ -2,30 +2,17 @@
 
 ## Communication
 
-- Do not agree by default; challenge weak or unsupported assertions
 - Be direct and concise; maximize information density
+- Prefer clarity over hedging; directness over padding
+- Do not agree by default; challenge weak or unsupported assertions
+
+## Reasoning
+
 - State assumptions explicitly when they affect design, behavior, or comments
 - If multiple interpretations exist, present them; don't pick silently
-- Push back when a simpler approach exists or when something seems wrong
-- Prefer clarity over hedging; directness over padding
-- If unsure or confused, say so explicitly; name what's unclear and ask
-
-## Planning
-
-- Produce explicit, ordered plans
-- Scale plan depth to task complexity; avoid over-planning trivial changes
-- Surface uncertainty early
-- End plans with unresolved questions, if any
-
-**Before finalizing a plan:** Does every step have clear completion criteria? Are dependencies between steps explicit? What could go wrong?
-
-## Codebase Navigation
-
-When `docs/codemap.md` exists, consult it early. Treat it as a guide, not infallible truth.
-
-If documentation conflicts with observed code or structure, trust the code and flag the discrepancy.
-
-When no navigation aids exist, proceed with direct exploration. Do not invent missing documentation.
+- Before committing to an approach, consider whether a simpler alternative exists and prefer it
+- If unsure or confused, say so explicitly; surface uncertainty early
+- Hold all outputs to the same standard — instructions, docs, and plans deserve the same rigor as code
 
 ## Development Philosophy
 
@@ -51,6 +38,14 @@ Anti-patterns to avoid:
 - Challenge your own work before presenting it.
 
 **Guardrail:** "Elegance" must reduce objective complexity: fewer moving parts, clearer invariants, reduced coupling, simpler interfaces, or better testability. Avoid aesthetic-only rewrites.
+
+## Codebase Navigation
+
+When `docs/codemap.md` exists, consult it early. Treat it as a guide, not infallible truth. If `docs/field-notes.md` exists, read it for cross-session context.
+
+If documentation conflicts with observed code or structure, trust the code and flag the discrepancy.
+
+When no navigation aids exist, proceed with direct exploration. Do not invent missing documentation.
 
 ## Coding Rules (All Languages)
 
@@ -83,21 +78,6 @@ Anti-patterns to avoid:
 - Verify fenced code blocks have a language specified (MD040)
 - Verify tables use `| --- |` column syntax (MD060), and no trailing whitespace exists (MD060)
 
-## Execution Guardrails
-
-- Never depend on persistent test fixtures outside of the repository for testing; always procedurally create them from tracked inputs
-- When creating temporary files or directories outside the repository (e.g., in `/tmp`), place them in a dedicated subdirectory named with a UUID or session identifier (e.g., `/tmp/agent-{uuid}/`) to avoid collisions with parallel processes; clean up after execution when feasible
-
-## Task Completion
-
-Never mark a task complete without demonstrating it works:
-
-- Run tests; confirm they pass
-- Check logs and output for warnings or errors
-- Prove correctness; don't just technically complete the checklist
-
-**Before marking done:** "Would a staff engineer approve this?" If not, it's not done.
-
 ## Document Authority and Roles
 
 | Document | Role | Authority | When to Read | Mutability |
@@ -106,8 +86,8 @@ Never mark a task complete without demonstrating it works:
 | `docs/decisions/*` | Explains *why*; rationale for constraints | 2 | When a constraint seems wrong or before proposing changes | Revise freely; promote to spec if correctness-critical |
 | `docs/plans/*` | Explains *how right now*; slice-specific intent | 3 | Active plan for current work only | Discard/rewrite freely; move to `inactive/` when done |
 | `docs/context.md` | User stories, motivation, auxiliary information | 4 | Session start; revisit when spec is silent | Informs spec and motivation behind behavior |
-| `docs/architecture.md` | Intentional design: boundaries, data flow, invariants | 5 | Session start; when proposing structural changes | Update on design changes; divergence = known debt or wrong code |
-| `docs/codemap.md` | Navigation map: structure, modules, locators | — | Navigating unfamiliar code; locating domain concepts | Regenerate freely; divergence = stale map |
+| `docs/codemap.md` | Descriptive map: structure, components, relationships, navigation | — | Session start; navigating code; planning structural changes | Regenerate freely; divergence = stale map |
+| `docs/field-notes.md` | Cross-session agent context: lessons learned, gotchas, failed approaches | — | Session start | Append only; do not edit or remove existing entries |
 
 - Specs override plans, code, and assumptions.
 - Spec and plan files are not infallible. Challenge invalid or suboptimal directives; propose enhancements or simplifications where warranted.
@@ -124,15 +104,30 @@ If the repository does not yet contain the documents described above:
 
 ### Spec Principles
 
-**Framing:** Binding contract, not narrative. Written for verification (pass/fail). Agent-readable—no inferred ambiguity.
+Specs are binding contracts, not narrative. Written for verification (pass/fail). Agent-readable — no inferred ambiguity.
 
-**Must include:** Scope boundaries · Normative requirements (MUST/MUST NOT/SHOULD/MAY) · Invariants · Contract surfaces (APIs, schemas, formats) · Error semantics · Behavioral examples (illustrative unless marked exhaustive) · Acceptance criteria
+**Must include:**
 
-**Must avoid:** Implementation details · Execution plans · Duplicate truth sources · Vague terms ("fast", "robust") · Speculative features · Implicit assumptions
+- Scope boundaries
+- Normative requirements (MUST/MUST NOT/SHOULD/MAY)
+- Invariants
+- Contract surfaces (APIs, schemas, formats)
+- Error semantics
+- Behavioral examples (illustrative unless marked exhaustive)
+- Acceptance criteria
+
+**Must avoid:**
+
+- Implementation details
+- Execution plans
+- Duplicate truth sources
+- Vague terms ("fast", "robust")
+- Speculative features
+- Implicit assumptions
 
 **Recognizing violations:**
 
-- *Implementation detail:* internal module, class, or function names not part of the public contract; file paths; data structures that aren't contract surfaces (API shapes, schemas, formats)
+- *Implementation detail:* internal module, class, or function names not part of the public contract; file paths; data structures that aren't contract surfaces
 - *Speculative feature:* "could", "might", "potentially", "in the future", "eventually"
 - *Presentation leak:* specifying HOW something is displayed rather than WHAT it communicates (unless visual form is itself the requirement)
 
@@ -152,11 +147,63 @@ If the repository does not yet contain the documents described above:
 
 > Spec is append-mostly. Removing/weakening a requirement is breaking.
 
-### Architecture Doc Maintenance
+### Plan Principles
 
-**Trigger:** Does this change affect how components relate—boundaries, interfaces, data flow, cross-cutting concerns (config/logging/errors), or invariants? If purely internal to one component, no update needed.
+Spec, plan, and implementation form a feedback loop — each stage can inform the others. Never treat the plan as a fixed script.
 
-**On conflict:** Never silently rewrite. State mismatch → clarify intent → update doc or code. Record design changes in `docs/decisions/*`.
+Plans outline how to implement slices of the spec: what to build, in what order, and what depends on what.
+
+**Before writing a plan:**
+
+- Read the spec, active decisions, and codemap
+- Grill the user on implementation details, edge cases, and priorities
+- Scale plan depth to task complexity
+
+**Plan structure:**
+
+- Break work into phases with clear completion criteria
+- Order phases by dependency, then priority
+- Identify what's uncertain and what decisions will need to be made during implementation
+- Prefer unordered checklists over sequential procedures unless ordering is essential
+
+**Before finalizing a plan:** Does every step have clear completion criteria? Are dependencies between steps explicit? What could go wrong? Does each element make sense?
+
+**As work progresses:**
+
+- When implementation reveals a spec gap or contradiction, update the spec (following the Spec Change Protocol) before proceeding
+- After completing a phase, revise remaining phases based on what was learned
+- Surface changes to the user and confirm the revised plan
+- Move completed plans to `docs/plans/inactive/` (confirm with user first)
+
+#### Task Completion
+
+When implementing plans, always demonstrate that completed work is correct. Apply the same rigor to other tasks when the scope warrants it:
+
+- Run tests; confirm they pass
+- Check logs and output for warnings or errors
+- Prove correctness; don't just technically complete the checklist
+
+**Before marking done:** "Would a staff engineer approve this?" If not, it's not done.
+
+### Decision Records
+
+When `docs/decisions/` exists:
+
+1. **Before creating a decision**, check the index for existing decisions on the same topic. Reference or supersede existing records — do not create parallel ones.
+2. **Naming convention**: `NNN-short-description.md` (zero-padded, monotonically increasing).
+3. **Maintain `docs/decisions/index.md`** with a summary table:
+
+   | ID | Title | Status | Summary |
+   | --- | --- | --- | --- |
+   | 001 | Short title | active | One-line summary |
+
+   Update the index whenever a decision is added, superseded, or withdrawn.
+
+4. **Status values**: `active` (in force), `superseded` (replaced by a later decision — note which one), `withdrawn` (no longer applicable).
+
+### Codemap Maintenance
+
+After changes that affect component boundaries, data flow, or project structure, update `docs/codemap.md`. If the codemap conflicts with code, the map is stale — not the code.
 
 ### Agent Rules
 
@@ -166,3 +213,8 @@ If the repository does not yet contain the documents described above:
 ### Pre-Implementation Check
 
 Before coding: every MUST/MUST NOT is testable, examples match requirements, no blocking open questions. If not met, return to spec iteration.
+
+## Execution Guardrails
+
+- Never depend on persistent test fixtures outside of the repository for testing; always procedurally create them from tracked inputs
+- When creating temporary files or directories outside the repository (e.g., in `/tmp`), place them in a dedicated subdirectory named with a UUID or session identifier (e.g., `/tmp/agent-{uuid}/`) to avoid collisions with parallel processes; clean up after execution when feasible
