@@ -111,13 +111,11 @@ Specs are binding contracts, not narrative. Written for verification (pass/fail)
 - Execution plans
 - Duplicate truth sources
 - Vague terms ("fast", "robust")
-- Speculative features
 - Implicit assumptions
 
 **Recognizing violations:**
 
 - *Implementation detail:* internal module, class, or function names not part of the public contract; file paths; data structures that aren't contract surfaces
-- *Speculative feature:* "could", "might", "potentially", "in the future", "eventually"
 - *Presentation leak:* specifying HOW something is displayed rather than WHAT it communicates (unless visual form is itself the requirement)
 
 **Litmus test:** Could two different implementations satisfy this spec? If the spec forces one specific implementation, it's over-specified.
