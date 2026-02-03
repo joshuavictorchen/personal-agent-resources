@@ -67,17 +67,6 @@ When no navigation aids exist, proceed with direct exploration. Do not invent mi
 - Test with pytest and coverage
 - Prefer type hints where they improve clarity
 
-## Markdown Preferences
-
-- Follow `markdownlint` rules when creating or editing Markdown files
-
-**Before finalizing Markdown:**
-
-- Verify fenced code blocks are surrounded by blank lines (MD031)
-- Verify blank lines surround all lists (MD032)
-- Verify fenced code blocks have a language specified (MD040)
-- Verify tables use `| --- |` column syntax (MD060), and no trailing whitespace exists (MD060)
-
 ## Document Authority and Roles
 
 | Document | Role | Authority | When to Read | Mutability |
