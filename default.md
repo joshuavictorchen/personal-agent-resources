@@ -13,6 +13,7 @@
 - Before committing to an approach, consider whether a simpler alternative exists and prefer it
 - If unsure or confused, say so explicitly; surface uncertainty early
 - Hold all outputs to the same standard — instructions, docs, and plans deserve the same rigor as code
+- When solving problems, ask yourself: am I addressing symptoms or am I addressing the root cause? Solve the root
 
 ## Development Philosophy
 
@@ -21,7 +22,6 @@
 - Performance: Consider performance without sacrificing clarity
 - Maintainability: Write code that's easy to update
 - Testability: Ensure code is testable
-- Less Code = Less Debt: Reduce footprint unless doing so harms readability or correctness
 
 Anti-patterns to avoid:
 
@@ -67,11 +67,18 @@ When no navigation aids exist, proceed with direct exploration. Do not invent mi
 - Test with pytest and coverage
 - Prefer type hints where they improve clarity
 
+## Execution Guardrails
+
+- Never depend on persistent test fixtures outside of the repository for testing; always procedurally create them from tracked inputs
+- When creating temporary files or directories outside the repository (e.g., in `/tmp`), place them in a dedicated subdirectory named with a UUID or session identifier (e.g., `/tmp/agent-{uuid}/`) to avoid collisions with parallel processes; clean up after execution when feasible
+
 ## Document Authority and Roles
+
+The following documents may exist. If they exist - or if they don't exist but their creation is requested - then use them as described in the remaining sections of these instructions.
 
 | Document | Role | Authority | When to Read | Mutability |
 | --- | --- | --- | --- | --- |
-| `docs/spec.md` | Normative contract (what MUST be true) | 1 (highest) | Before implementation; reference during; verify compliance after | Update explicitly on conflict |
+| `docs/spec.md` | Normative contract (what MUST be true) | 1 (high) | Before implementation; reference during; verify compliance after | Update explicitly on conflict |
 | `docs/decisions/*` | Explains *why*; rationale for constraints | 2 | When a constraint seems wrong or before proposing changes | Revise freely; promote to spec if correctness-critical |
 | `docs/plans/*` | Explains *how right now*; slice-specific intent | 3 | Active plan for current work only | Discard/rewrite freely; move to `inactive/` when done |
 | `docs/context.md` | User stories, motivation, auxiliary information | 4 | Session start; revisit when spec is silent | Informs spec and motivation behind behavior |
@@ -80,16 +87,6 @@ When no navigation aids exist, proceed with direct exploration. Do not invent mi
 
 - Specs override plans, code, and assumptions.
 - Spec and plan files are not infallible. Challenge invalid or suboptimal directives; propose enhancements or simplifications where warranted.
-
-### When Documents Are Absent
-
-If the repository does not yet contain the documents described above:
-
-1. **Authority fallback:** User instructions are the sole authority source. Do not infer or invent missing specs, plans, or decisions.
-2. **Minimal assumptions:** State any assumptions explicitly. If ambiguity affects correctness or externally visible behavior, ask before proceeding.
-3. **Inline planning:** For non-trivial tasks, produce a brief inline plan and confirm before execution.
-
-**Bootstrap option:** If work would benefit from persistent documents (e.g., multi-session tasks, complex invariants), propose creating them and explain why.
 
 ### Spec Principles
 
@@ -200,8 +197,3 @@ After changes that affect component boundaries, data flow, or project structure,
 ### Pre-Implementation Check
 
 Before coding: every MUST/MUST NOT is testable, examples match requirements, no blocking open questions. If not met, return to spec iteration.
-
-## Execution Guardrails
-
-- Never depend on persistent test fixtures outside of the repository for testing; always procedurally create them from tracked inputs
-- When creating temporary files or directories outside the repository (e.g., in `/tmp`), place them in a dedicated subdirectory named with a UUID or session identifier (e.g., `/tmp/agent-{uuid}/`) to avoid collisions with parallel processes; clean up after execution when feasible
