@@ -79,10 +79,9 @@ The following documents may exist. If they exist - or if they don't exist but th
 | Document | Role | Authority | When to Read | Mutability |
 | --- | --- | --- | --- | --- |
 | `docs/spec.md` | Normative contract (what MUST be true) | 1 (high) | Before implementation; reference during; verify compliance after | Update explicitly on conflict |
-| `docs/decisions/*` | Explains *why*; rationale for constraints | 2 | When a constraint seems wrong or before proposing changes | Revise freely; promote to spec if correctness-critical |
-| `docs/plans/*` | Explains *how right now*; slice-specific intent | 3 | Active plan for current work only | Discard/rewrite freely; move to `inactive/` when done |
-| `docs/context.md` | User stories, motivation, auxiliary information | 4 | Session start; revisit when spec is silent | Informs spec and motivation behind behavior |
-| `docs/codemap.md` | Descriptive map: structure, components, relationships, navigation | — | Session start; navigating code; planning structural changes | Regenerate freely; divergence = stale map |
+| `docs/plans/*` | Explains *how right now*; slice-specific intent | 2 | Active plan for current work only | Discard/rewrite freely; move to `inactive/` when done |
+| `docs/context.md` | User stories, motivation, auxiliary information | 3 | Session start; revisit when spec is silent | Informs spec and motivation behind behavior |
+| `docs/codemap.md` | Descriptive map: structure, components, relationships, navigation | — | Session start; navigating code; planning structural changes | Update freely; divergence = stale map |
 | `docs/field-notes.md` | Cross-session agent context: lessons learned, gotchas, failed approaches | — | Session start | Append only; do not edit or remove existing entries |
 
 - Specs override plans, code, and assumptions.
@@ -118,16 +117,6 @@ Specs are binding contracts, not narrative. Written for verification (pass/fail)
 **Litmus test:** Could two different implementations satisfy this spec? If the spec forces one specific implementation, it's over-specified.
 
 **Undefined behavior:** If behavior is not specified, it is undefined and must not be assumed.
-
-### Spec Change Protocol
-
-1. **Never silently deviate.** Code matches current spec until spec is updated.
-2. **Classify:**
-   - *Breaking* (removes/weakens behavior) → explicit approval required
-   - *Additive* (defines undefined behavior) → proceed provisionally, flag for review
-   - *Clarifying* (resolves ambiguity) → proceed, document rationale
-3. Propose diff with affected sections and rationale.
-4. Document outcome in `docs/decisions/*`.
 
 ### Plan Principles
 
@@ -166,22 +155,6 @@ When implementing plans, always demonstrate that completed work is correct. Appl
 - Prove correctness; don't just technically complete the checklist
 
 **Before marking done:** "Would a staff engineer approve this?" If not, it's not done.
-
-### Decision Records
-
-When `docs/decisions/` exists:
-
-1. **Before creating a decision**, check the index for existing decisions on the same topic. Reference or supersede existing records — do not create parallel ones.
-2. **Naming convention**: `NNN-short-description.md` (zero-padded, monotonically increasing).
-3. **Maintain `docs/decisions/index.md`** with a summary table:
-
-   | ID | Title | Status | Summary |
-   | --- | --- | --- | --- |
-   | 001 | Short title | active | One-line summary |
-
-   Update the index whenever a decision is added, superseded, or withdrawn.
-
-4. **Status values**: `active` (in force), `superseded` (replaced by a later decision — note which one), `withdrawn` (no longer applicable).
 
 ### Codemap Maintenance
 
