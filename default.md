@@ -129,8 +129,6 @@ Specs are binding contracts, not narrative. Written for verification (pass/fail)
 3. Propose diff with affected sections and rationale.
 4. Document outcome in `docs/decisions/*`.
 
-> Spec is append-mostly. Removing/weakening a requirement is breaking.
-
 ### Plan Principles
 
 Spec, plan, and implementation form a feedback loop — each stage can inform the others. Never treat the plan as a fixed script.
