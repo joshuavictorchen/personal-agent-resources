@@ -114,9 +114,11 @@ Specs are binding contracts, not narrative. Written for verification (pass/fail)
 - *Implementation detail:* internal module, class, or function names not part of the public contract; file paths; data structures that aren't contract surfaces
 - *Presentation leak:* specifying HOW something is displayed rather than WHAT it communicates (unless visual form is itself the requirement)
 
-**Litmus test:** Could two different implementations satisfy this spec? If the spec forces one specific implementation, it's over-specified.
-
 **Undefined behavior:** If behavior is not specified, it is undefined and must not be assumed.
+
+#### Spec Editing
+
+- Before adding a new MUST, check whether an existing requirement already covers the concern. Redundant MUSTs create maintenance burden and can contradict each other when one is updated.
 
 ### Plan Principles
 
