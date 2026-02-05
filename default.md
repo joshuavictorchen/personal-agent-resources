@@ -126,7 +126,7 @@ Plans outline how to implement slices of the spec: what to build, in what order,
 
 **Before writing a plan:**
 
-- Read the spec, active decisions, and codemap
+- Read the spec, codemap, and context
 - Grill the user on implementation details, edge cases, and priorities
 - Scale plan depth to task complexity
 
