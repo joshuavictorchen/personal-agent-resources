@@ -148,7 +148,22 @@ Plans outline how to implement slices of the spec: what to build, in what order,
 - Surface changes to the user and confirm the revised plan
 - Move completed plans to `docs/plans/inactive/` (confirm with user first)
 
-#### Task Completion
+### Pre-Plan Interview
+
+Before drafting any implementation plan, you MUST ask the user clarifying questions.
+Do not skip this step even if the spec appears comprehensive — the goal is to surface
+assumptions, resolve ambiguities, and align on priorities before committing to a design.
+
+At minimum, address:
+- Priorities and ordering preferences (what matters most? what can be deferred?)
+- Dependency and tooling preferences (acceptable libraries, build systems, test frameworks)
+- Known constraints not in the spec (performance targets, deployment environment, team context)
+- Ambiguities or underspecified areas you noticed while reading
+- Design trade-offs where multiple valid approaches exist
+
+Only proceed to plan drafting after the user has responded.
+
+### Task Completion
 
 When implementing plans, always demonstrate that completed work is correct. Apply the same rigor to other tasks when the scope warrants it:
 
