@@ -10,8 +10,8 @@ AI agents ship with generic defaults and no memory of user preferences. This rep
 default.md       # canonical agent behavior
 sync.sh          # deployment script
 skills/          # invocable procedures
+  field-notes/   # appends session lessons to docs/field-notes.md
   map-code/      # generates docs/codemap.md for codebase navigation
-  maintain-architecture/  # creates/updates docs/architecture.md
   reflect/       # session retrospective and feedback
 ```
 
