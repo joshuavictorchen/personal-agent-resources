@@ -83,7 +83,7 @@ The following documents may exist. If they exist - or if they don't exist but th
 | `docs/spec.md` | Normative contract (what MUST be true) | 1 (high) | Before implementation; reference during; verify compliance after | Update explicitly on conflict |
 | `docs/plans/*` | Explains *how right now*; slice-specific intent | 2 | Active plan for current work only | Discard/rewrite freely; move to `inactive/` when done |
 | `docs/context.md` | User stories, motivation, auxiliary information | 3 | Session start; revisit when spec is silent | Informs spec and motivation behind behavior |
-| `docs/codemap.md` | Descriptive map: structure, components, relationships, navigation | — | Session start; navigating code; planning structural changes | Update freely; divergence = stale map |
+| `docs/codemap.md` | Descriptive map: structure, components, relationships, navigation, requirements traceability | — | Session start; navigating code; planning structural changes | Update freely; divergence = stale map |
 | `docs/field-notes.md` | Cross-session agent context: lessons learned, gotchas, failed approaches | — | Session start | Append only; do not edit or remove existing entries |
 
 - Specs override plans, code, and assumptions.
@@ -102,6 +102,7 @@ Specs are binding contracts, not narrative. Written for verification (pass/fail)
 - Error semantics
 - Behavioral examples (illustrative unless marked exhaustive)
 - Acceptance criteria
+- Requirement anchors on normative statements (see Requirement Anchors below)
 
 **Must avoid:**
 
@@ -121,6 +122,27 @@ Specs are binding contracts, not narrative. Written for verification (pass/fail)
 #### Spec Editing
 
 - Before adding a new MUST, check whether an existing requirement already covers the concern. Redundant MUSTs create maintenance burden and can contradict each other when one is updated.
+
+#### Requirement Anchors
+
+Each normative statement (MUST/MUST NOT/SHOULD/MAY) in a spec MUST carry a
+stable anchor in the format `[SCOPE-N]` (e.g., `[TH-1]`, `[FP-3]`). SCOPE is
+a 2–5 character mnemonic for the section topic, not tied to section numbers.
+When extending an existing spec, reuse its established SCOPE prefixes.
+Permissive statements and definitional prose do not receive anchors. Deferred
+or future items MUST NOT use normative keywords and do not receive anchors — if
+it is not in scope, it is a note, not a requirement.
+
+- **Atomicity**: one anchor per independently verifiable assertion. Don't
+  decompose beyond what's independently testable; don't group claims under one
+  anchor if they'd be verified separately. When a MUST introduces a list of
+  sub-requirements, anchor each verifiable sub-item; the umbrella statement is
+  structural and does not receive an anchor
+- **Stability**: never reuse a retired anchor. When a requirement is removed
+  from the spec, remove its row from the RTM; the anchor ID is retired. Gaps in
+  numbering are acceptable; broken cross-references are not
+- **Test linkage**: tests MUST reference the anchor they verify in the test
+  name, docstring, or comment
 
 ### Plan Principles
 
@@ -142,15 +164,18 @@ Plans outline how to implement slices of the spec: what to build, in what order,
 - When shared infrastructure is prerequisite, isolate it as a minimal foundation phase gated on "first feature slice can begin"
 - Identify what's uncertain and what decisions will need to be made during implementation
 - Prefer unordered checklists over sequential procedures unless ordering is essential
+- Each phase MUST list the requirement anchors it addresses. The plan SHOULD
+  note anchors deferred to future work
 
 **Before finalizing a plan:** Does every step have clear completion criteria? Are dependencies between steps explicit? What could go wrong? Does each element make sense?
 
 **As work progresses:**
 
-- When implementation reveals a spec gap or contradiction, update the spec (following the Spec Change Protocol) before proceeding
+- When implementation reveals a spec gap or contradiction, consult with the user to update the spec before proceeding (unless yolo mode is active — then update the spec and present a clear summary of the changes and justification upon task completion)
 - After completing a phase, revise remaining phases based on what was learned
 - Surface changes to the user and confirm the revised plan
 - Move completed plans to `docs/plans/inactive/` (confirm with user first)
+- When a phase completes, verify each anchor it addresses (implementation location + passing test) and update the traceability section in `docs/codemap.md`
 
 ### Pre-Plan Interview
 
@@ -174,12 +199,28 @@ When implementing plans, always demonstrate that completed work is correct. Appl
 - Run tests; confirm they pass
 - Check logs and output for warnings or errors
 - Prove correctness; don't just technically complete the checklist
+- Verify the requirements traceability section in `docs/codemap.md` is current
+  and complete: all spec anchors present, status reflects passing tests.
+  Unsatisfied MUST/MUST NOT anchors block completion; SHOULD/MAY anchors are
+  tracked but non-blocking. The user may explicitly defer any anchor
 
 **Before marking done:** "Would a staff engineer approve this?" If not, it's not done.
 
 ### Codemap Maintenance
 
 After changes that affect component boundaries, data flow, or project structure, update `docs/codemap.md`. If the codemap conflicts with code, the map is stale — not the code.
+
+The codemap MUST include a requirements traceability section mapping each spec
+anchor to its implementation location and verifying test:
+
+| Anchor | Requirement | Impl | Test | Status |
+|--------|-------------|------|------|--------|
+| [TH-1] | Lumped-parameter modeling | core.py::LumpedComponent | test_core.py::test_lumped_th1 | ✓ |
+| [TH-2] | Energy conservation balance | | | |
+| [TH-8] | Replaceable component interface | | | deferred |
+
+At session start, verify RTM alignment with the current spec. New or removed
+anchors indicate a stale table.
 
 ### Agent Rules
 

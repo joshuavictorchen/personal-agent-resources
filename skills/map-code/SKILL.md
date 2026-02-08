@@ -102,6 +102,16 @@ Map domain concepts to their implementation locations:
 
 Replace placeholder rows with actual domain concepts. If the codebase is not domain-driven, rename this section to **Feature → Code Locations**.
 
+### Requirements Traceability
+
+**Include this section only when `docs/spec.md` (or equivalent) exists and contains requirement anchors (`[SCOPE-N]` format).**
+
+Map each anchored requirement from the spec to its implementation and verifying
+test. Extract all anchors from the spec. Locate evidence by searching for
+anchor references in test files and source code. Follow the RTM format and
+rules defined in the Requirement Anchors and Codemap Maintenance sections of
+the base agent directives.
+
 ### Invariants
 
 System-wide rules that hold across components:
