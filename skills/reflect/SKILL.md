@@ -1,101 +1,55 @@
 ---
 name: reflect
-description: End-of-session reflection tool for agentic workflows. Use when the user requests a retrospective, debrief, or feedback at the end of a long coding session. Produces two outputs - (1) feedback for the user on workflow improvements, prompt refinements, and skill gaps, and (2) lessons learned for the agent that could be added to system prompts or AGENTS.md files.
+description: End-of-session reflection that produces (1) actionable feedback for the user and (2) proposed updates to agent instructions. Use when the user requests a retrospective, debrief, or feedback at the end of a coding session.
 ---
 
-# Session Retrospective
+# Session Reflection
 
-Generate structured feedback at the end of an agentic coding session.
+Analyze the current session and produce two deliverables: feedback for the user and proposed directive updates for the agent's system prompt instructions.
 
 ## When to Invoke
 
-- User says "retro", "retrospective", "reflect", "debrief", "session feedback", or "what did we learn"
+- User says "retro", "retrospective", "reflect", "debrief", or "what did we learn"
 - End of a long or complex task (ask first)
-- After repeated friction or rework during a session (ask first)
 
 Do **not** invoke for trivial or single-turn tasks unless explicitly requested.
 
-## Output Structure
+## Process
 
-Produce two clearly separated sections:
+Review the session for:
 
-### Section 1: Feedback for User
+- Your own mistakes (wrong assumptions, bad approaches, failed attempts, misread code)
+- User corrections (anything the user told you to do differently)
+- Friction points (rework, confusion, scope changes)
+- Patterns that worked well, especially non-obvious ones
 
-Analyze the session and provide actionable feedback on user-controllable inputs and workflow decisions.
+Then produce the two output sections below. Omit either section if there's nothing substantive to report.
 
-#### Workflow Friction
+## Output
 
-Structural or process issues observed across the session:
+### Feedback for User
 
-- Points where unclear requirements caused rework
-- Missing context that had to be inferred or asked about
-- Scope changes mid-task and their impact
+What the user could do differently — unclear requirements, missing context, scope changes, communication patterns that caused friction or worked well. Be direct; criticize the workflow, not the person.
 
-#### Prompt and Skill Improvements
+### Proposed Directives
 
-Issues related to governing inputs (AGENTS.md, specs, instructions):
+For each insight, draft a proposed change to the agent's system prompt — additions, refinements, consolidations, or removals:
 
-- Ambiguities that caused confusion or backtracking
-- Missing guidance that would have prevented mistakes
-- Overly rigid or overly loose directives that hurt efficiency
+- Specify where it belongs in the existing instruction structure
+- Check if an existing directive already covers the concern — propose a refinement rather than a new bullet
+- Flag directives that caused friction, went unused, or have been superseded — propose removal or consolidation
+- Match the style and voice of existing instructions
 
-#### Communication Patterns
+Present all proposed changes to the user for approval. Do not modify instructions directly.
 
-- Questions that should have been asked earlier
-- Information that was provided too late or in an unhelpful format
-- Effective patterns worth repeating
+Each proposed directive must pass all three:
 
-#### Suggested Diffs
-
-Where applicable, propose concrete diffs to AGENTS.md, specs, or other governing documents.
-
-### Section 2: Lessons for Agent
-
-Distill generalizable operational learnings that could improve future agent behavior.
-
-Do not propose rules that depend on session-specific context, repository quirks, or one-off mistakes.
-
-#### What Worked
-
-- Approaches or heuristics that proved effective
-- Tool usage patterns that were efficient
-- Planning strategies that paid off
-
-#### What Didn't Work
-
-- Approaches that failed or required backtracking
-- Incorrect assumptions and their consequences
-- Tool misuse or inefficient sequences
-
-#### Proposed System Prompt Additions
-
-Format as bullet points suitable for direct inclusion in an AGENTS.md or system prompt:
-
-```markdown
-- [Category]: [Concise directive]
-```
-
-Examples:
-
-- **Execution**: When modifying XML-based formats (docx, pptx), validate structure before and after edits
-- **Planning**: For refactors touching >5 files, produce a dependency graph before starting
-- **Communication**: If a task requires external resources not in the repo, surface this in the first response
-
-#### Anti-patterns Discovered
-
-Specific behaviors to avoid, framed as "do not" directives. Each must reference an observed behavior from the session.
+- **Specific**: "Check function signatures before calling" beats "be more careful"
+- **Actionable**: An agent reading this would change its behavior
+- **Non-redundant**: Not already covered by an existing directive
 
 ## Tone
 
-- Be direct; the user wants actionable feedback, not reassurance
-- Criticize the workflow, not the person
-- Acknowledge what went well, but prioritize improvement opportunities
-- If the session went smoothly with no significant learnings, say so briefly
-
-## Process
-
-1. Review the conversation history for friction points, rework, and clarifications
-2. Identify patterns (repeated issues, escalating complexity, successful recoveries)
-3. Separate user-addressable issues from agent-addressable issues
-4. Propose concrete changes, not vague suggestions
-5. Keep each section focused; omit categories with nothing substantive to report
+- Be direct; prioritize improvement over reassurance
+- Criticize your own behavior honestly — your mistakes matter more than the user's, because you're the one proposing rules for yourself
+- If the session went smoothly with no learnings, say so

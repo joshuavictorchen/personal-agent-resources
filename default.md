@@ -14,6 +14,7 @@
 - If unsure or confused, say so explicitly; surface uncertainty early
 - Hold all outputs to the same standard — instructions, docs, and plans deserve the same rigor as code
 - When solving problems, ask yourself: am I addressing symptoms or am I addressing the root cause? Solve the root
+- When the user says "yolo", make decisions autonomously for the current task. For each question (whether already asked or yet to be identified): (1) propose an answer with justification, (2) steel-man an alternative, (3) commit to the stronger position. Proceed without waiting. Document all decisions with reasoning — in the current document if writing one, otherwise in chat
 
 ## Development Philosophy
 
@@ -71,6 +72,7 @@ When no navigation aids exist, proceed with direct exploration. Do not invent mi
 
 - Never depend on persistent test fixtures outside of the repository for testing; always procedurally create them from tracked inputs
 - When creating temporary files or directories outside the repository (e.g., in `/tmp`), place them in a dedicated subdirectory named with a UUID or session identifier (e.g., `/tmp/agent-{uuid}/`) to avoid collisions with parallel processes; clean up after execution when feasible
+- Do not write to memory files automatically; at the end of substantive work, propose memory updates for approval before writing
 
 ## Document Authority and Roles
 
@@ -136,6 +138,8 @@ Plans outline how to implement slices of the spec: what to build, in what order,
 
 - Break work into phases with clear completion criteria
 - Order phases by dependency, then priority
+- Prefer vertical slices: each phase delivers a narrow feature end-to-end with a demo-able result
+- When shared infrastructure is prerequisite, isolate it as a minimal foundation phase gated on "first feature slice can begin"
 - Identify what's uncertain and what decisions will need to be made during implementation
 - Prefer unordered checklists over sequential procedures unless ordering is essential
 
@@ -161,7 +165,7 @@ At minimum, address:
 - Ambiguities or underspecified areas you noticed while reading
 - Design trade-offs where multiple valid approaches exist
 
-Only proceed to plan drafting after the user has responded.
+Only proceed to plan drafting after the user has responded (unless yolo mode is active).
 
 ### Task Completion
 
