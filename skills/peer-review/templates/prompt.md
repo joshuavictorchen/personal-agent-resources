@@ -14,7 +14,7 @@ The workspace and caller context sections below tell you where to look.
 1. Start with any file/line pointers the caller provided — read those first.
 2. Use `Glob` to find related files and components.
 3. Use `Grep` to trace symbols, call paths, and references.
-4. Use `Read` to inspect changed files, specs (`docs/spec.md`), and plans (`docs/plans/*`).
+4. Use `Read` to inspect changed files.
 
 **If you have shell access** (Codex sandbox):
 1. Use `cat`, `rg`, `find`, `ls` to inspect files — read-only commands only.
