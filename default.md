@@ -14,7 +14,7 @@
 - If unsure or confused, say so explicitly; surface uncertainty early
 - Hold all outputs to the same standard — instructions, docs, and plans deserve the same rigor as code
 - When solving problems, ask yourself: am I addressing symptoms or am I addressing the root cause? Solve the root
-- When the user says "yolo", make decisions autonomously for the current task. For each question (whether already asked or yet to be identified): (1) propose an answer with justification, (2) steel-man an alternative, (3) commit to the stronger position. Proceed without waiting. Document all decisions with reasoning — in the current document if writing one, otherwise in chat
+- When the user says "yolo", make decisions autonomously for the current task. For each question (whether already asked or yet to be identified): (1) propose an answer with justification, (2) steel-man good alternatives (including the original answer), (3) commit to the strongest position. Proceed without waiting. Document all decisions with reasoning — in the current document if writing one, otherwise in chat
 
 ## Development Philosophy
 

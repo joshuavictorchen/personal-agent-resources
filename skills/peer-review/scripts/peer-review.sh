@@ -188,7 +188,7 @@ probe_target() {
   fi
 }
 
-# assemble the request file from prompt template + context + round instructions
+# assemble the request file: context first, then review instructions
 assemble_request() {
   local session_dir="$1"
   local round="$2"
@@ -197,41 +197,53 @@ assemble_request() {
   workspace_root="$(cat "$session_dir/.workspace_root")"
 
   {
-    # prompt template
-    cat "$PROMPT_FILE"
+    echo "# Peer review request"
     echo
 
-    # workspace orientation
-    echo "## workspace"
+    # workspace orientation comes first so reviewer knows where they are
+    echo "## Workspace"
     echo
     echo "Project root: \`$workspace_root\`"
     echo "Session dir: \`$session_dir\`"
     echo
 
     if [[ "$round" -eq 1 ]]; then
-      # round 1: include caller context
-      echo "## caller context"
+      # round 1: caller context (the thing being reviewed) before instructions
+      echo "## Context"
       echo
       cat "$session_dir/context.md"
       echo
-      echo "## instructions"
-      echo
-      echo "This is round 1. Inspect the repository directly before concluding."
     else
-      # round 2+: include previous response + caller rebuttal
+      # round 2+: previous response + caller followup
       local prev_round=$((round - 1))
-      echo "## previous reviewer response (round $prev_round)"
+      echo "## Previous reviewer response (round $prev_round)"
       echo
       cat "$session_dir/round-$prev_round-response.md"
       echo
-      echo "## caller rebuttal"
+      echo "## Caller followup"
       echo
-      cat "$session_dir/round-$round-rebuttal.md"
+      cat "$session_dir/round-$round-followup.md"
       echo
-      echo "## instructions"
+      echo "## Original context"
       echo
-      echo "This is round $round. Focus on unresolved disagreements only."
+      echo "Full original context: \`$session_dir/context.md\`"
+      echo "Complete round 1 request: \`$session_dir/round-1-request.md\`"
+      echo
+    fi
+
+    # review instructions (criteria, output format, principles)
+    cat "$PROMPT_FILE"
+    echo
+
+    # round-specific instructions at the end
+    echo "## Round instructions"
+    echo
+    if [[ "$round" -eq 1 ]]; then
+      echo "This is round 1. Inspect the repository directly before concluding."
+    else
+      echo "This is round $round. Focus on unresolved disagreements and validate any proposed solutions."
       echo "Keep settled points closed. Do not re-raise accepted items."
+      echo "Re-read the original context files above if needed for background."
     fi
   } > "$request_file"
 }
@@ -246,17 +258,32 @@ run_reviewer() {
     codex)
       # use last-message capture to keep response artifacts clean
       local codex_log_file="${response_file%-response.md}-invoke.log"
+      local codex_status=0
       timeout "${TIMEOUT}s" codex exec --sandbox read-only \
         --output-last-message "$response_file" \
         "Read the file at $request_file and follow every instruction in it." \
-        > "$codex_log_file" 2>&1
+        > "$codex_log_file" 2>&1 || codex_status=$?
+      # fallback: if --output-last-message produced no output, use full transcript
+      if [[ $codex_status -eq 0 && ! -s "$response_file" && -s "$codex_log_file" ]]; then
+        cp "$codex_log_file" "$response_file"
+      fi
+      # retry without --output-last-message if it caused a non-timeout failure
+      if [[ $codex_status -ne 0 && $codex_status -ne 124 && ! -s "$response_file" ]]; then
+        codex_status=0
+        timeout "${TIMEOUT}s" codex exec --sandbox read-only \
+          "Read the file at $request_file and follow every instruction in it." \
+          > "$response_file" 2>&1 || codex_status=$?
+      fi
+      return $codex_status
       ;;
     claude)
       # claude -p hangs if stdin is not closed when using a positional prompt
+      # stderr goes to invoke.log to keep the response file clean
+      local claude_log_file="${response_file%-response.md}-invoke.log"
       timeout "${TIMEOUT}s" claude -p \
         "Read the file at $request_file and follow every instruction in it." \
         --output-format text --permission-mode dontAsk --tools Read,Grep,Glob \
-        < /dev/null > "$response_file" 2>&1
+        < /dev/null > "$response_file" 2>"$claude_log_file"
       ;;
   esac
 }
@@ -299,8 +326,13 @@ invoke_command() {
     local prev_round=$((round - 1))
     [[ -f "$session_dir/round-$prev_round-response.md" ]] \
       || die "missing round-$prev_round-response.md in $session_dir"
-    [[ -f "$session_dir/round-$round-rebuttal.md" ]] \
-      || die "missing round-$round-rebuttal.md in $session_dir"
+    [[ -f "$session_dir/round-$round-followup.md" ]] \
+      || die "missing round-$round-followup.md in $session_dir"
+    # round 2+ assembly points to these files; validate they exist
+    [[ -f "$session_dir/context.md" ]] \
+      || die "missing context.md in $session_dir (needed for round 2+ context pointers)"
+    [[ -f "$session_dir/round-1-request.md" ]] \
+      || die "missing round-1-request.md in $session_dir (needed for round 2+ context pointers)"
   fi
 
   [[ -f "$PROMPT_FILE" ]] || die "missing prompt template: $PROMPT_FILE"

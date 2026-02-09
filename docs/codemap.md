@@ -83,13 +83,13 @@ agent-config/
 - **Key files**:
   - `SKILL.md` — caller procedure (init → context → invoke → evaluate → iterate → synthesize) + pickup procedure for handoff
   - `README.md` — usage, configuration, session artifacts, known limitations
-  - `templates/prompt.md` — reviewer prompt with flexible evaluation criteria and VERDICT/ISSUES/CHANGE_REQUESTS output format
+  - `templates/prompt.md` — reviewer prompt with evaluation criteria, principles, and VERDICT/SUMMARY/ISSUES/PROPOSED_CHANGES output format
   - `scripts/peer-review.sh` — 3 commands: `init` (session creation with label), `invoke` (probe + CLI invocation + response capture), `cleanup` (safe deletion with path validation)
 - **Interface**: Invoked as `/peer-review <target>`, `ask codex`/`ask claude`, or `/peer-review pickup <session-dir>`; script accepts `init|invoke|cleanup` subcommands
 - **Depends on**: Local `codex` and/or `claude` CLI binaries; GNU `timeout`; `mktemp`
 - **Depended on by**: Nothing (consumed by agents at runtime)
 - **Invariants**:
-  - `context.md` includes conversation log (user messages verbatim, key agent decisions) plus file pointers; reviewer inspects repo files directly
+  - `context.md` includes structured sections: review scope, task summary, open questions, recent conversation (~100 line cap), file pointers; reviewer inspects repo files directly
   - `.agent-chat/.gitignore` is auto-created with `*` in the active workspace
   - Session dirs under `.agent-chat/{timestamp}-{label}-XXXXXX` contain `.workspace_root` marker file; created via `mktemp -d` for collision safety
   - `invoke` and `cleanup` both canonicalize and validate session dir (parent must be `.agent-chat/`, marker must exist and match ancestry)
@@ -98,6 +98,9 @@ agent-config/
   - Retries archive prior `round-N-{request,response,error,invoke.log}` artifacts as `*.prev-*`
   - Codex reviewer writes final verdict text to `round-N-response.md` and raw transcript to `round-N-invoke.log`
   - Agents must use fully resolved absolute script paths in all Bash commands (no shell variables) for permission pattern matching
+  - Reviewer output is a read-only proposal (VERDICT/SUMMARY/ISSUES/PROPOSED_CHANGES); caller presents to user for accept/reject unless yolo mode
+  - Round 2+ requests include pointers to `context.md` and `round-1-request.md` so fresh reviewer processes can access original context
+  - Codex `--output-last-message` has transcript fallback: if flag produces empty output on success, full transcript is used; retries without flag on non-timeout failure
   - `claude -p` invoked with `< /dev/null` to prevent stdin hang
   - Exit code 0 = success, 1 = invocation failure, 2 = transport unavailable
 

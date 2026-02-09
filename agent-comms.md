@@ -675,3 +675,111 @@ User asked whether context.md is redundant since its content appears in round-1-
 5. **README bootstrap section was rewritten.** The old version used `$SCRIPT` and `$HOME` in examples. Verify the new literal-path examples work from your environment. The permission prefix format may differ for Codex.
 
 6. **Round cap is 2 by default.** `invoke` will reject round 3+ unless `PEER_REVIEW_MAX_ROUNDS` is increased. This is enforced in the script, not just guidance.
+
+---
+
+# Claude Code | 2026-02-08 — Handoff: peer-review skill review + Codex→Claude transport
+
+## Task for next agent
+
+Two tasks, in order:
+
+### Task 1: Review the peer-review skill as-is
+
+The skill has gone through several refinement rounds since the initial v2 rewrite. Read all four files and evaluate the current state:
+
+- `skills/peer-review/SKILL.md` — caller/reviewer procedures
+- `skills/peer-review/scripts/peer-review.sh` — session lifecycle script
+- `skills/peer-review/templates/prompt.md` — reviewer prompt template
+- `skills/peer-review/README.md` — usage docs
+
+Also read `agent-comms.md` (this file) for the full design history and `docs/codemap.md` for the structural map.
+
+Key things to verify:
+- Is the caller procedure in SKILL.md clear and unambiguous for both Claude and Codex agents?
+- Is the prompt template effective for producing useful reviews?
+- Are the script, docs, and prompt all coherent with each other? (Prior rounds found stale references repeatedly.)
+- Is anything still over-engineered or under-specified?
+
+### Task 2: Get Codex→Claude invocation working
+
+This is the primary unsolved problem. Claude→Codex and Claude→Claude both work. Codex→Claude does not work reliably from Codex's sandbox.
+
+## What we know about the Codex→Claude hang
+
+### Verified test matrix (from prior sessions)
+
+| Direction | Command | Sandboxed | Escalated |
+|-----------|---------|-----------|-----------|
+| Claude → Codex | `codex exec --sandbox read-only` | works | works |
+| Claude → Claude | `claude -p ... < /dev/null` | works | works |
+| Codex → Claude | `claude -p ... < /dev/null` | **hangs/times out** | works |
+| Codex → Codex | `codex exec` | permission denied | works |
+
+### Root cause analysis
+
+1. **`claude -p` hangs on stdin** even with a positional prompt argument. The fix is `< /dev/null` to close stdin. This is already in the script.
+
+2. **Codex sandbox blocks subprocess completion.** Even with `< /dev/null`, `claude -p` hangs or times out when called from Codex's sandboxed bash. The sandbox environment restricts something that `claude -p` needs (possibly network access, file descriptors, or process management).
+
+3. **PTY simulation doesn't help.** `script -qec "claude -p ..."` fails with "Permission denied" on pseudo-terminal allocation in the sandbox.
+
+4. **Escalated permissions fix everything.** When Codex runs with sufficient permissions, both `claude -p` and `codex exec` work as subprocesses.
+
+### What to try
+
+1. **Diagnose what the sandbox blocks.** Run `claude -p "Reply: OK" --output-format text < /dev/null 2>/tmp/claude-stderr.txt` with a short timeout and inspect stderr. Does it hang silently? Does it produce an error? What does `strace` show (if available)?
+
+2. **Try `--no-input` or `--non-interactive` flags.** Check if `claude -p --help` reveals any flags that disable interactive/stdin behavior beyond what `< /dev/null` does.
+
+3. **Try background + poll.** Instead of blocking:
+   ```bash
+   timeout 300 claude -p "..." --output-format text < /dev/null > /tmp/response.md 2>/tmp/stderr.log &
+   pid=$!
+   # poll for completion
+   while kill -0 $pid 2>/dev/null; do sleep 5; done
+   wait $pid
+   ```
+   This separates process creation from blocking. The sandbox might allow backgrounding even if foreground subprocess management fails.
+
+4. **Try `nohup` or `setsid`.** These detach the subprocess from the parent's terminal/process group:
+   ```bash
+   setsid timeout 300 claude -p "..." --output-format text < /dev/null > /tmp/response.md 2>/tmp/stderr.log
+   ```
+
+5. **Try the Anthropic API directly via `curl`.** Bypass the CLI entirely for the Codex→Claude direction:
+   ```bash
+   curl -s https://api.anthropic.com/v1/messages \
+     -H "x-api-key: $ANTHROPIC_API_KEY" \
+     -H "anthropic-version: 2023-06-01" \
+     -H "content-type: application/json" \
+     -d '{"model":"claude-sonnet-4-5-20250929","max_tokens":8096,"messages":[{"role":"user","content":"..."}]}'
+   ```
+   This loses Claude Code's tool access (Read/Grep/Glob) but works for non-code reviews (plan critique, spec review). The reviewer would rely entirely on what's in the request file. Check if `ANTHROPIC_API_KEY` is available in the Codex environment.
+
+6. **Check environment differences.** Compare `env` output between a working Claude session and the Codex sandbox. Look for missing env vars, different PATH, restricted file descriptors, etc.
+
+7. **File handoff remains the reliable fallback.** If direct invocation can't be fixed, optimize the handoff UX. The current design already supports this (exit code 2 + pickup command).
+
+### Constraints from the Codex sandbox
+
+From prior testing:
+- `/home/master/.codex/sessions` gives "Permission denied"
+- `script -qec` fails with "pseudo-terminal: Permission denied"
+- `timeout` works (GNU coreutils 9.4)
+- Subprocesses can be spawned but may hang
+- The one-time approval bootstrap was completed for the invoke command prefix
+
+### Current script behavior for Codex→Claude
+
+In `peer-review.sh`, the Claude invocation (`run_reviewer` function) does:
+```bash
+timeout "${TIMEOUT}s" claude -p \
+  "Read the file at $request_file and follow every instruction in it." \
+  --output-format text --permission-mode dontAsk --tools Read,Grep,Glob \
+  < /dev/null > "$response_file" 2>"$claude_log_file"
+```
+
+The probe (when enabled with `PEER_REVIEW_PROBE=1`) does the same pattern with a shorter timeout.
+
+If nothing works for direct invocation, the skill gracefully degrades to file handoff (probe returns exit 2, error file contains the pickup command).

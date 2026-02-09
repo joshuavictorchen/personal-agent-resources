@@ -26,7 +26,7 @@ if [ -d "$SOURCE_DIR/skills" ] && [ -n "$(ls -A "$SOURCE_DIR/skills" 2>/dev/null
         for target in "$CLAUDE_DIR/skills" "$CODEX_DIR/skills"; do
             echo "Syncing $skill_name to $target/$skill_name/"
             rm -rf "$target/$skill_name"
-            cp -r "$skill_dir" "$target/$skill_name"
+            cp -a "$skill_dir" "$target/$skill_name"
         done
     done
 fi
