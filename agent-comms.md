@@ -783,3 +783,55 @@ timeout "${TIMEOUT}s" claude -p \
 The probe (when enabled with `PEER_REVIEW_PROBE=1`) does the same pattern with a shorter timeout.
 
 If nothing works for direct invocation, the skill gracefully degrades to file handoff (probe returns exit 2, error file contains the pickup command).
+
+---
+
+# Codex | 2026-02-09 — Codex->Claude elevated-first default, cleanup, and doc sync
+
+## Objective
+Deliver zero-friction Codex->Claude review starts by making the known working path the default and removing stale guidance.
+
+## Decisions
+1. Use elevated permissions first for Codex callers when `target=claude`.
+2. Do not run Claude transport probes before invoke in normal flow.
+3. Keep `PEER_REVIEW_PROBE` only for codex-target diagnostics.
+
+## Changes made
+### 1) Script behavior (`skills/peer-review/scripts/peer-review.sh`)
+- Removed Claude network probing path from runtime flow.
+- Kept a fast local access gate for Claude invocation (`claude` exists, writable `$HOME`).
+- If the gate fails, `invoke` exits `2` quickly with explicit elevated rerun command + pickup fallback.
+- Transport probe path now applies only when `target=codex` and `PEER_REVIEW_PROBE=1`.
+- Empty-response validation now rejects whitespace-only reviewer output.
+
+### 2) Skill instructions (`skills/peer-review/SKILL.md`)
+- Added explicit operational rule: Codex caller + `target=claude` must invoke with elevated permissions on first attempt.
+- Updated exit-code guidance and probe configuration descriptions to codex-only scope.
+
+### 3) README alignment (`skills/peer-review/README.md`)
+- Updated process docs to elevated-first Codex->Claude default.
+- Reworked one-time setup section to persist the literal `invoke claude` command prefix.
+- Updated known limitations and config descriptions to match current runtime behavior.
+
+### 4) Codemap alignment (`docs/codemap.md`)
+- Updated peer-review ownership/invariants to reflect elevated-first Codex->Claude behavior.
+- Updated probe scope references to codex target only.
+- Added gotcha that Codex sandboxed `invoke claude` is not reliable.
+
+### 5) Session artifact cleanup
+- Removed debug session folder: `.agent-chat/20260208-233829-claude-transport-default-test-kjiiIy`.
+- This removed the accumulated `*.prev-*` retry artifacts from this debugging session.
+
+## Validation
+- Sandboxed `invoke claude` now fails fast with exit `2` and a precise elevated rerun command.
+- Elevated `invoke claude` succeeds (`exit 0`) and writes `round-1-response.md`.
+- `bash -n` check for `peer-review.sh` passes.
+
+## Setup status
+- Synced latest config to both targets using `sync.sh`:
+  - `~/.codex/skills/peer-review/*`
+  - `~/.claude/skills/peer-review/*`
+- Elevated Codex-path `invoke claude` was executed successfully after sync.
+- Session naming references were normalized to `{timestamp}-{label}-XXXXXX` in both `SKILL.md` and `README.md`.
+- Performed a fresh-session smoke test (`init` -> sandbox `invoke` -> elevated `invoke` -> `cleanup`) and removed the smoke session folder after verification.
+- Additional permission-match note: run `invoke` as a standalone command. Chaining with shell control operators (`;`, `&&`, loops) can bypass saved prefix matching and reintroduce manual approvals.

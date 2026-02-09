@@ -1,6 +1,6 @@
 # peer-review
 
-Cross-agent peer review skill for Claude Code and Codex. When invoked, the calling agent gathers context, sends it to a reviewer agent via CLI, iterates on disagreements, and presents actionable results — all within the same session.
+Cross-agent peer review skill. When invoked, the calling agent gathers context, sends it to a reviewer agent (Claude or Codex) via CLI, iterates on disagreements, and presents actionable results — all within the same session.
 
 ## Requirements
 
@@ -12,7 +12,7 @@ GNU `timeout` (from coreutils) for invocation safety.
 
 ## Usage
 
-From any Claude Code or Codex session:
+From any agent session:
 
 | Phrase | Effect |
 |--------|--------|
@@ -28,7 +28,7 @@ Anything the caller can describe in context: code, plans, architecture decisions
 
 ## Process flow
 
-### Direct invocation (Claude → Claude, Claude → Codex)
+### Direct invocation
 
 ```
 caller                          script                          reviewer
@@ -39,13 +39,12 @@ caller                          script                          reviewer
   ├─ write context.md             │                               │
   │                               │                               │
   ├─ invoke <target> <dir> 1─────►│                               │
-  │                               ├─ [probe if enabled] ─────────►│
   │                               ├─ assemble round-1-request.md  │
-  │                               ├─ invoke reviewer (300s)──────►│
+  │                               ├─ invoke reviewer (600s)──────►│
   │                               │                               ├─ read request
   │                               │                               ├─ inspect repo
-  │                               │◄─ response───────────────────┤
-  │                               ├─ write round-1-response.md   │
+  │                               │◄─ response────────────────────┤
+  │                               ├─ write round-1-response.md    │
   │◄─ exit 0──────────────────────┤                               │
   │                               │                               │
   ├─ read response                │                               │
@@ -56,46 +55,66 @@ caller                          script                          reviewer
   ├─ invoke <target> <dir> 2─────►│               ... repeat ...  │
 ```
 
+#### Agent-specific invocation notes
+
+| Caller | Target | Behavior |
+|--------|--------|----------|
+| Claude | Claude | Works directly |
+| Claude | Codex  | Works directly |
+| Codex  | Claude | Requires elevated permissions (sandbox blocks Claude CLI) |
+| Codex  | Codex  | Works directly |
+
 ### File handoff (when direct invocation fails)
 
-When the probe fails (exit code 2), direct transport is unavailable:
+When `invoke` exits with code `2`, direct transport is unavailable:
 
 1. Caller tells user: "Review request ready. Run `/peer-review pickup <path>` in the other agent."
 2. User switches to the other agent and triggers pickup.
 3. Reviewer reads the request, inspects the repo, writes the response file.
 4. User switches back. Caller reads the response and continues.
 
-## One-time approval bootstrap
+## One-time permission setup
 
-Each agent may require elevated permission to run reviewer subprocesses. Do this once per agent, then choose the persistent/always option in the approval UI.
+Both agents need a one-time setup so `invoke` runs without manual approval prompts.
 
-```bash
-# from the target repo — use your actual absolute path
-# Claude: /home/<user>/.claude/skills/peer-review/scripts/peer-review.sh
-# Codex:  /home/<user>/.codex/skills/peer-review/scripts/peer-review.sh
-<script> init "bootstrap"
-# capture the session dir from output, then:
-printf '- bootstrap transport approval\n' > /path/to/session-dir/context.md
-<script> invoke <target> /path/to/session-dir 1
+### Claude Code
+
+Add the script to allowed commands in `~/.claude/settings.json`:
+
+```json
+{"permissions": {"allow": ["Bash(/home/<user>/.claude/skills/peer-review/scripts/peer-review.sh *)"]}}
 ```
 
-Important — use fully resolved absolute paths (no `$HOME`, `$SCRIPT`, or other variables):
-- persist approval for the command prefix: the literal path to `peer-review.sh` followed by any subcommand
-- this single prefix covers both reviewer targets (`codex` and `claude`)
-- set the equivalent permission in Claude sessions via `~/.claude/settings.json`:
-  ```json
-  {"permissions": {"allow": ["Bash(/home/<user>/.claude/skills/peer-review/scripts/peer-review.sh *)"]}}
-  ```
+Replace `<user>` with your system username.
+
+### Codex
+
+Run a bootstrap invoke and persist approval for the command prefix:
+
+```bash
+/home/<user>/.codex/skills/peer-review/scripts/peer-review.sh init "bootstrap"
+# write context.md in the printed session dir, then:
+/home/<user>/.codex/skills/peer-review/scripts/peer-review.sh invoke claude <session-dir> 1
+```
+
+In the approval UI, persist the prefix: `/home/<user>/.codex/skills/peer-review/scripts/peer-review.sh invoke`
+
+One prefix covers both `invoke claude` and `invoke codex`.
+
+### Important for both agents
+
+- Use fully resolved absolute paths (no `$HOME`, `$SCRIPT`, or other variables) — permission systems match command strings literally
+- Run `invoke` as a standalone command (no `;`, `&&`, loops) so prefix matching stays deterministic
 
 ## Session artifacts
 
-Sessions are stored in `<repo>/.agent-chat/{timestamp}-{label}/`. A `.gitignore` with `*` is auto-created to prevent commits. Each session contains:
+Sessions are stored in `<repo>/.agent-chat/<yymmdd>-<hhmm>-<label>[-N]/` (numeric suffix on collision). A `.gitignore` with `*` is auto-created to prevent commits. Each session contains:
 
 - `context.md` — caller's structured context: review scope, task summary, open questions, recent conversation, file pointers
 - `round-N-request.md` — assembled request (prompt + context + instructions)
 - `round-N-response.md` — reviewer output
 - `round-N-followup.md` — caller's rebuttals, proposed solutions, or both (round 2+)
-- `round-N-invoke.log` — CLI diagnostic output (Claude: stderr; Codex: full execution transcript via `--output-last-message`, or merged stdout if fallback was used)
+- `round-N-invoke.log` — CLI diagnostic output
 - `round-N-error.txt` — only on failure
 - `*.prev-*` — archived artifacts from prior retry attempts for the same round
 
@@ -109,14 +128,12 @@ Sessions persist for inspection. Clean up via:
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `PEER_REVIEW_TIMEOUT` | `300` | Seconds per reviewer call |
-| `PEER_REVIEW_PROBE` | `0` | Set to `1` to enable transport probe before invoke |
-| `PEER_REVIEW_PROBE_TIMEOUT` | `45` | Seconds per transport probe (when enabled) |
-| `PEER_REVIEW_MAX_ROUNDS` | `2` | Maximum round number allowed per session |
-| `PEER_REVIEW_SKILL_DIR` | `$HOME/.<agent>/skills/peer-review` | Skill directory override (auto-detected from script location) |
+| `PEER_REVIEW_TIMEOUT` | `600` | Seconds per reviewer call |
+| `PEER_REVIEW_MAX_ROUNDS` | `3` | Maximum round number allowed per session |
+| `PEER_REVIEW_SKILL_DIR` | auto-detected | Skill directory override (resolved from script location) |
 
 ## Known limitations
 
-- **Codex sandbox may block CLI invocation**: Codex's sandboxed environment may not allow calling `claude -p` or `codex exec` as subprocesses. Enable the transport probe (`PEER_REVIEW_PROBE=1`) to detect this early — it exits with code 2 and provides a pickup command for manual handoff.
-- **Reviewer is read-only**: Claude reviewers run with `--tools Read,Grep,Glob` and cannot execute shell commands or modify files.
-- **Probe is disabled by default**: The transport probe adds latency and token cost per round. Enable with `PEER_REVIEW_PROBE=1` when working in unfamiliar environments or when CLI availability is uncertain.
+- **Codex sandbox blocks Claude CLI**: Codex callers targeting Claude must use elevated permissions. The script detects this and exits with code `2`, printing the elevated rerun command.
+- **Reviewer is read-only**: Claude reviewers use `Read,Grep,Glob` only. Codex reviewers run in read-only sandbox. Neither modifies files.
+- **No cross-agent RPC**: When direct CLI invocation fails, the fallback is user-mediated file handoff.

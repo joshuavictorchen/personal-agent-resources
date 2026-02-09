@@ -4,15 +4,15 @@
 #
 # commands:
 #   init                              create session dir, print path
-#   invoke <target> <session-dir> <round>   probe + invoke reviewer, capture response
+#   invoke <target> <session-dir> <round>   invoke reviewer, capture response
 #   cleanup <session-dir>             safe deletion of session dir
 
 set -euo pipefail
 
-TIMEOUT="${PEER_REVIEW_TIMEOUT:-300}"
-PROBE_TIMEOUT="${PEER_REVIEW_PROBE_TIMEOUT:-45}"
-MAX_ROUNDS="${PEER_REVIEW_MAX_ROUNDS:-2}"
-PROBE_ENABLED="${PEER_REVIEW_PROBE:-0}"
+TIMEOUT="${PEER_REVIEW_TIMEOUT:-600}"
+MAX_ROUNDS="${PEER_REVIEW_MAX_ROUNDS:-3}"
+# used for "transport exists but unavailable in current environment"
+TRANSPORT_UNAVAILABLE_CODE=75
 
 # resolve skill directory for prompt template access
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -33,10 +33,10 @@ Commands:
             Optional label becomes part of the directory name for readability.
             Prints the absolute session dir path to stdout.
             Example: peer-review.sh init "auth refactor"
-              → .agent-chat/20260208-143022-auth-refactor/
+              → .agent-chat/260208-1430-auth-refactor/
 
-  invoke    Assemble a request file, probe the target CLI, invoke the reviewer,
-            and capture the response. Exit codes:
+  invoke    Assemble a request file, invoke the reviewer, and capture the
+            response. Exit codes:
               0  success (response at <session-dir>/round-<N>-response.md)
               1  invocation failed (details at <session-dir>/round-<N>-error.txt)
               2  transport unavailable (details at <session-dir>/round-<N>-error.txt)
@@ -45,10 +45,8 @@ Commands:
             and contains a .workspace_root marker before deletion.
 
 Environment:
-  PEER_REVIEW_TIMEOUT    seconds per reviewer call (default: 300)
-  PEER_REVIEW_PROBE        enable transport probe before invoke (default: 0)
-  PEER_REVIEW_PROBE_TIMEOUT  seconds per transport probe (default: 45)
-  PEER_REVIEW_MAX_ROUNDS maximum round number allowed (default: 2)
+  PEER_REVIEW_TIMEOUT    seconds per reviewer call (default: 600)
+  PEER_REVIEW_MAX_ROUNDS maximum round number allowed (default: 3)
   PEER_REVIEW_SKILL_DIR  override skill directory path
 EOF
 }
@@ -73,6 +71,19 @@ archive_file_if_exists() {
   [[ -f "$file_path" ]] || return 0
   timestamp="$(date +%Y%m%d-%H%M%S)-$RANDOM"
   mv "$file_path" "${file_path}.prev-${timestamp}"
+}
+
+check_claude_local_access() {
+  command -v claude >/dev/null 2>&1 || {
+    printf '%s\n' "command not found: claude"
+    return 1
+  }
+
+  # claude writes runtime state under $HOME
+  if [[ ! -w "$HOME" ]]; then
+    printf '%s\n' "cannot write to HOME path '$HOME' (required by claude runtime)"
+    return 1
+  fi
 }
 
 canonicalize_path() {
@@ -130,10 +141,16 @@ init_command() {
   [[ -f "$session_root/.gitignore" ]] || printf '*\n' > "$session_root/.gitignore"
 
   local timestamp
-  timestamp="$(date +%Y%m%d-%H%M%S)"
-  local session_dir
-  session_dir="$(mktemp -d "$session_root/${timestamp}-${label}-XXXXXX")" \
-    || die "failed to create session directory"
+  timestamp="$(date +%y%m%d-%H%M)"
+  local base="$session_root/${timestamp}-${label}"
+  local session_dir="$base"
+  # atomic collision handling: mkdir fails if dir exists, then try numeric suffixes
+  local i=1
+  while ! mkdir "$session_dir" 2>/dev/null; do
+    ((i++))
+    session_dir="${base}-${i}"
+    [[ $i -le 99 ]] || die "too many session collisions for ${base}"
+  done
 
   # record workspace root so the reviewer knows where to look
   printf '%s\n' "$workspace_root" > "$session_dir/.workspace_root"
@@ -143,50 +160,6 @@ init_command() {
 }
 
 # --- invoke command ---
-
-# probe whether the target CLI can respond at all
-probe_target() {
-  local target="$1"
-  local probe_output=""
-  local probe_status=0
-
-  case "$target" in
-    codex)
-      command -v codex >/dev/null 2>&1 || {
-        printf '%s\n' "command not found: codex"
-        return 1
-      }
-      probe_output="$(timeout "${PROBE_TIMEOUT}s" codex exec --sandbox read-only \
-        "Reply with exactly: PROBE_OK" 2>&1)" || probe_status=$?
-      ;;
-    claude)
-      # claude -p hangs if stdin is not closed when using a positional prompt
-      command -v claude >/dev/null 2>&1 || {
-        printf '%s\n' "command not found: claude"
-        return 1
-      }
-      probe_output="$(timeout "${PROBE_TIMEOUT}s" claude -p \
-        "Reply with exactly: PROBE_OK" \
-        --output-format text --permission-mode dontAsk --tools Read \
-        < /dev/null 2>&1)" || probe_status=$?
-      ;;
-  esac
-
-  if [[ $probe_status -eq 124 ]]; then
-    printf '%s\n' "probe timed out after ${PROBE_TIMEOUT}s"
-    return 1
-  fi
-  if [[ $probe_status -ne 0 ]]; then
-    printf '%s\n' "probe exited with code $probe_status: $(summarize_output "$probe_output")"
-    return 1
-  fi
-
-  # codex exec can include header text around the marker
-  if [[ "$probe_output" != *"PROBE_OK"* ]]; then
-    printf '%s\n' "probe did not return PROBE_OK: $(summarize_output "$probe_output")"
-    return 1
-  fi
-}
 
 # assemble the request file: context first, then review instructions
 assemble_request() {
@@ -224,10 +197,10 @@ assemble_request() {
       echo
       cat "$session_dir/round-$round-followup.md"
       echo
-      echo "## Original context"
+      echo "## Session history"
       echo
-      echo "Full original context: \`$session_dir/context.md\`"
-      echo "Complete round 1 request: \`$session_dir/round-1-request.md\`"
+      echo "Original context: \`$session_dir/context.md\`"
+      echo "All round artifacts are in \`$session_dir/\` (\`round-N-request.md\`, \`round-N-response.md\`, \`round-N-followup.md\`). Read earlier rounds sequentially as needed for full conversation history."
       echo
     fi
 
@@ -243,7 +216,7 @@ assemble_request() {
     else
       echo "This is round $round. Focus on unresolved disagreements and validate any proposed solutions."
       echo "Keep settled points closed. Do not re-raise accepted items."
-      echo "Re-read the original context files above if needed for background."
+      echo "Read earlier round artifacts from the session history above if needed for background."
     fi
   } > "$request_file"
 }
@@ -257,6 +230,8 @@ run_reviewer() {
   case "$target" in
     codex)
       # use last-message capture to keep response artifacts clean
+      # note: --output-last-message is a codex CLI feature that may change across versions;
+      # fallback chain below handles degradation if the flag is removed or changes behavior
       local codex_log_file="${response_file%-response.md}-invoke.log"
       local codex_status=0
       timeout "${TIMEOUT}s" codex exec --sandbox read-only \
@@ -277,13 +252,20 @@ run_reviewer() {
       return $codex_status
       ;;
     claude)
+      local claude_preflight_error=""
+      if ! claude_preflight_error="$(check_claude_local_access)"; then
+        # codex sandbox cannot run claude reliably without elevated permissions
+        printf '%s\n' "$claude_preflight_error" > "${response_file%-response.md}-invoke.log"
+        return "$TRANSPORT_UNAVAILABLE_CODE"
+      fi
+
       # claude -p hangs if stdin is not closed when using a positional prompt
       # stderr goes to invoke.log to keep the response file clean
       local claude_log_file="${response_file%-response.md}-invoke.log"
       timeout "${TIMEOUT}s" claude -p \
         "Read the file at $request_file and follow every instruction in it." \
         --output-format text --permission-mode dontAsk --tools Read,Grep,Glob \
-        < /dev/null > "$response_file" 2>"$claude_log_file"
+      < /dev/null > "$response_file" 2>"$claude_log_file"
       ;;
   esac
 }
@@ -328,32 +310,15 @@ invoke_command() {
       || die "missing round-$prev_round-response.md in $session_dir"
     [[ -f "$session_dir/round-$round-followup.md" ]] \
       || die "missing round-$round-followup.md in $session_dir"
-    # round 2+ assembly points to these files; validate they exist
+    # round 2+ assembly points to context.md for session history
     [[ -f "$session_dir/context.md" ]] \
-      || die "missing context.md in $session_dir (needed for round 2+ context pointers)"
-    [[ -f "$session_dir/round-1-request.md" ]] \
-      || die "missing round-1-request.md in $session_dir (needed for round 2+ context pointers)"
+      || die "missing context.md in $session_dir (needed for round 2+ session history)"
   fi
 
   [[ -f "$PROMPT_FILE" ]] || die "missing prompt template: $PROMPT_FILE"
 
   # assemble the request
   assemble_request "$session_dir" "$round"
-
-  # probe transport (disabled by default; set PEER_REVIEW_PROBE=1 to enable)
-  if [[ "$PROBE_ENABLED" == "1" ]]; then
-    local probe_error=""
-    if ! probe_error="$(cd "$workspace_root" && probe_target "$target")"; then
-      {
-        echo "Transport unavailable: '$target' CLI probe failed."
-        echo "Details: $probe_error"
-        echo ""
-        echo "For manual handoff, ask the reviewing agent to pick up:"
-        echo "  /peer-review pickup $session_dir"
-      } > "$error_file"
-      exit 2
-    fi
-  fi
 
   # invoke reviewer
   local invoke_status=0
@@ -368,6 +333,28 @@ invoke_command() {
     exit 1
   fi
 
+  # transport unavailable in current execution environment (for example codex sandbox)
+  if [[ $invoke_status -eq "$TRANSPORT_UNAVAILABLE_CODE" ]]; then
+    local script_path
+    local transport_details="<no details>"
+    script_path="$(canonicalize_path "${BASH_SOURCE[0]}" || true)"
+    [[ -n "$script_path" ]] || script_path="${BASH_SOURCE[0]}"
+    if [[ -s "$invoke_log_file" ]]; then
+      transport_details="$(summarize_output "$(cat "$invoke_log_file")")"
+    fi
+    {
+      echo "Transport unavailable: '$target' CLI cannot run in this environment."
+      echo "Details: $transport_details"
+      echo ""
+      echo "Run this command with elevated permissions:"
+      echo "  $script_path invoke $target $session_dir $round"
+      echo ""
+      echo "If elevated execution is unavailable, ask for manual handoff:"
+      echo "  /peer-review pickup $session_dir"
+    } > "$error_file"
+    exit 2
+  fi
+
   # check for other failure
   if [[ $invoke_status -ne 0 ]]; then
     {
@@ -378,9 +365,9 @@ invoke_command() {
   fi
 
   # check for empty response
-  if [[ ! -s "$response_file" ]]; then
+  if [[ ! -s "$response_file" ]] || ! grep -q '[^[:space:]]' "$response_file"; then
     {
-      echo "Reviewer returned empty response."
+      echo "Reviewer returned empty or whitespace-only response."
       echo "Session artifacts preserved at: $session_dir"
     } > "$error_file"
     exit 1

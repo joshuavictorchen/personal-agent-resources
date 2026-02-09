@@ -30,6 +30,7 @@ The script is at `scripts/peer-review.sh` relative to this skill directory. Dete
 Override with `$PEER_REVIEW_SKILL_DIR/scripts/peer-review.sh` if set.
 
 **Critical**: Use the fully resolved absolute path (with your actual system username, not `<user>`) in every Bash command. Do not use shell variables like `$SCRIPT` or `$HOME` — the permission system matches command strings literally, and variable references will trigger manual approval prompts.
+Run `invoke` as a standalone command (no `;`, `&&`, loops, or wrapper scripts) so persisted permission prefixes match reliably.
 
 In the examples below, `<script>` is a placeholder — always substitute your resolved absolute path.
 
@@ -41,11 +42,11 @@ In the examples below, `<script>` is a placeholder — always substitute your re
 
 Pick a short label that identifies the review scope (e.g., "auth-refactor", "plan-review", "perf-claims"). The output is the absolute session directory path — capture it from the command output for use in subsequent steps.
 
-This creates `.agent-chat/{timestamp}-{label}/` in the current repo with a `.workspace_root` marker.
+This creates `.agent-chat/<yymmdd>-<hhmm>-<label>[-N]/` in the current repo with a `.workspace_root` marker. The `[-N]` numeric suffix is appended automatically on collision.
 
 ### 3. Write context
 
-Write a file called `context.md` inside the session directory (use the Write tool, not Bash). The reviewer is a fresh process with no access to your chat history — everything it needs must be in this file.
+Write a file called `context.md` inside the session directory. Use your agent's file-writing capability (Claude: Write tool; Codex: shell redirection or heredoc) rather than interactive editing. The reviewer is a fresh process with no access to your chat history — everything it needs must be in this file.
 
 Structure context.md with these sections (use `##` headings — context.md is embedded inside a larger document, so `#` top-level headings break nesting):
 
@@ -57,6 +58,13 @@ Structure context.md with these sections (use `##` headings — context.md is em
 
 **`## Recent conversation`** — Quote the last 2-3 user/agent exchanges from your context window, as close to verbatim as possible. These give the reviewer the immediate context leading to the review request. If earlier exchanges are directly relevant to the review scope, include those too. Omit raw tool output (file contents, grep results) — the reviewer can re-inspect files on its own. Truncate long individual turns with `[...truncated...]` and keep this section under ~100 lines total.
 
+Example:
+```
+**User**: The auth middleware is duplicating token validation — can you refactor it?
+**Agent**: I moved the shared validation into `validate_token()` in auth/core.py and updated both middleware paths to call it. [...truncated...]
+**User**: Looks good, ask codex to review this before we merge.
+```
+
 **`## File pointers`** — Specific locations the reviewer should examine first (e.g., `src/auth.py:45-80`, `docs/plans/auth.md`). Point to content that exists in the repo — the reviewer can inspect files directly.
 
 ### 4. Invoke the reviewer
@@ -65,43 +73,51 @@ Structure context.md with these sections (use `##` headings — context.md is em
 <script> invoke <target> <session-dir> 1
 ```
 
+Agent-specific requirements:
+- **Claude callers**: both targets work via direct invocation. No special handling needed.
+- **Codex callers, target=claude**: run `invoke` with elevated permissions on the first attempt. Codex sandbox blocks Claude CLI runtime access. The script cannot self-escalate; the caller must launch invoke with elevation.
+- **Codex callers, target=codex**: normal invoke flow.
+
 Exit codes:
 - `0` — success. Read `<session-dir>/round-1-response.md` for the review.
-- `2` — transport unavailable. Read `<session-dir>/round-1-error.txt` for details and the pickup command. Report to user: the target CLI is not reachable from this environment. Provide the pickup command so the user can ask the other agent directly.
+- `2` — transport unavailable. Read `<session-dir>/round-1-error.txt` for details. For `target=claude`, this includes an elevated rerun command. If elevated execution is unavailable, use the pickup command for manual handoff.
 - `1` — invocation failed (timeout, empty response). Read error file and report to user.
 
 On retries for the same round, prior artifacts are archived with a `*.prev-*` suffix.
 
 ### 5. Evaluate and iterate
 
-Read the response file. Evaluate each finding — including observations on AGREE verdicts:
+You drive iteration autonomously — do not involve the user between rounds. Read the response file. Evaluate each finding by category:
 
-- **Accept** — you agree. Write your proposed fix or implementation plan.
-- **Reject** — you disagree. State specific rationale.
-- **Modify** — you accept the diagnosis but propose a different solution.
+- **MUST_FIX** — accept and fix, reject with strong rationale, or propose an alternative fix.
+- **SHOULD_FIX** — same, but rejection is more acceptable if justified.
+- **SUGGESTION** — note and decide. No response required unless you disagree.
+- **POSITIVE** — acknowledge. Do not break these things during fixes.
 
-If any findings warrant iteration, write `<session-dir>/round-N-followup.md` (where N is the next round number) containing any combination of rebuttals (for rejected findings) and proposed solutions (for accepted findings). Then invoke the next round:
+If any findings warrant iteration, write `<session-dir>/round-N-followup.md` (where N is the next round number) containing rebuttals, proposed solutions, or both. Repeat critical context from the original review scope if relevant — the round 2+ reviewer is a fresh process that must read files to recover context. Then invoke the next round:
 
 ```bash
 <script> invoke <target> <session-dir> 2
 ```
 
-The reviewer validates your proposed solutions and re-evaluates contested points. Iterate until converged or the round cap is reached (default: 2, set `PEER_REVIEW_MAX_ROUNDS` to increase).
+The reviewer validates your proposed solutions and re-evaluates contested points. Continue iterating until converged or the round cap is reached (default: 3, override with `PEER_REVIEW_MAX_ROUNDS`). Do not ask the user whether to continue — use your judgment on whether unresolved findings warrant another round.
 
-**In yolo mode**: for each finding, follow the yolo protocol — (1) propose your response with justification, (2) steel-man alternatives including the reviewer's suggestion, (3) commit to the strongest position. Iterate autonomously with the reviewer. Document all decisions with reasoning.
+**Iteration policy:** iterate on unresolved MUST_FIX and material SHOULD_FIX findings. Do not open new rounds for SUGGESTION-only deltas unless they impact correctness or design risk.
 
-### 6. Present proposal
+### 6. Present results
 
-Present the consolidated result to the user — always, regardless of verdict:
+After iteration is complete (converged or cap reached), present the consolidated result to the user:
 
-- **Verdict**: final reviewer assessment
-- **Issues found**: with severity (even minor observations from AGREE verdicts)
+- **Verdict**: final reviewer assessment (AGREE/DISAGREE)
+- **Findings**: all MUST_FIX, SHOULD_FIX, and notable SUGGESTION items across all rounds
 - **Your position on each**: accepted (with proposed fix), rejected (with rationale), or modified
 - **Proposed changes**: specific changes ready for the user to approve or reject
 
-The user decides what to apply. Do not apply changes without user approval. End with the session dir path for artifact inspection.
+The user sees the end state, not each round. End with the session dir path for artifact inspection.
 
-In yolo mode: apply accepted changes and report what was done with reasoning.
+The user decides what to apply. Do not apply changes without user approval.
+
+**In yolo mode**: apply accepted changes, then report what was done with reasoning. Yolo applies to the results of the iteration process — the caller still iterates normally with the reviewer.
 
 ## Reviewer Procedure (Pickup)
 
@@ -109,7 +125,7 @@ When triggered by `/peer-review pickup <session-dir>`:
 
 1. Find the highest-numbered `round-N-request.md` that has no corresponding `round-N-response.md`.
 2. Read the request file. It contains the full review prompt, workspace location, and context.
-3. Follow the instructions in the request: gather evidence from the repository using Read, Grep, and Glob, then evaluate the work.
+3. Follow the instructions in the request: gather evidence from the repository (Claude: Read, Grep, Glob; Codex: `cat`, `rg`, `find` in read-only sandbox), then evaluate the work.
 4. Write your review to the corresponding response file (e.g., `round-1-response.md`) in the same session directory.
 5. Tell the user: "Review complete. Response written to `<session-dir>/round-N-response.md`."
 
@@ -117,8 +133,6 @@ When triggered by `/peer-review pickup <session-dir>`:
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `PEER_REVIEW_TIMEOUT` | `300` | Seconds per reviewer CLI call |
-| `PEER_REVIEW_PROBE` | `0` | Set to `1` to enable transport probe before invoke |
-| `PEER_REVIEW_PROBE_TIMEOUT` | `45` | Seconds per transport probe (when enabled) |
-| `PEER_REVIEW_MAX_ROUNDS` | `2` | Maximum round number allowed per session |
-| `PEER_REVIEW_SKILL_DIR` | `$HOME/.<agent>/skills/peer-review` | Skill directory override (auto-detected from script location) |
+| `PEER_REVIEW_TIMEOUT` | `600` | Seconds per reviewer CLI call |
+| `PEER_REVIEW_MAX_ROUNDS` | `3` | Maximum round number allowed per session |
+| `PEER_REVIEW_SKILL_DIR` | auto-detected | Skill directory override (resolved from script location) |
