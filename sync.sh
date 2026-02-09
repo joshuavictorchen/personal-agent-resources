@@ -19,14 +19,16 @@ echo "Copying default.md:"
 cp -v "$SOURCE_DIR/default.md" "$CLAUDE_DIR/CLAUDE.md"
 cp -v "$SOURCE_DIR/default.md" "$CODEX_DIR/AGENTS.md"
 
-# Copy skills folders and contents (overwrite existing, preserve extra files)
+# Copy skills folders (clean target first to prevent stale file accumulation)
 if [ -d "$SOURCE_DIR/skills" ] && [ -n "$(ls -A "$SOURCE_DIR/skills" 2>/dev/null)" ]; then
-    echo ""
-    echo "Copying skills to $CLAUDE_DIR/skills/:"
-    cp -rv "$SOURCE_DIR/skills/"* "$CLAUDE_DIR/skills/"
-    echo ""
-    echo "Copying skills to $CODEX_DIR/skills/:"
-    cp -rv "$SOURCE_DIR/skills/"* "$CODEX_DIR/skills/"
+    for skill_dir in "$SOURCE_DIR/skills"/*/; do
+        skill_name="$(basename "$skill_dir")"
+        for target in "$CLAUDE_DIR/skills" "$CODEX_DIR/skills"; do
+            echo "Syncing $skill_name to $target/$skill_name/"
+            rm -rf "$target/$skill_name"
+            cp -r "$skill_dir" "$target/$skill_name"
+        done
+    done
 fi
 
 echo ""

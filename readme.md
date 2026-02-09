@@ -12,6 +12,7 @@ sync.sh          # deployment script
 skills/          # invocable procedures
   field-notes/   # appends session lessons to docs/field-notes.md
   map-code/      # generates docs/codemap.md for codebase navigation
+  peer-review/   # runs bounded cross-agent reviews via codex/claude CLIs
   reflect/       # session retrospective and feedback
 ```
 
@@ -33,3 +34,4 @@ This copies:
 - Sync overwrites existing skills in target directories
 - No syntax validation before copying
 - Both tools share the same `default.md`; tool-specific directives would require restructuring
+- Peer review session artifacts are written to `<repo>/.agent-chat/`; the script auto-creates `<repo>/.agent-chat/.gitignore` with `*`
