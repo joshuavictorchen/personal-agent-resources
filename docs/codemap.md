@@ -154,7 +154,7 @@ skills/*/ ───┘             ├── ~/.claude/skills/*/
 | `peer-review` | `skills/peer-review/SKILL.md` | Skill name (invoked as `/peer-review`) |
 | `PEER_REVIEW_SKILL_DIR` | `skills/peer-review/SKILL.md`, `skills/peer-review/scripts/peer-review.sh` | Configurable absolute base path for skill assets |
 | `PEER_REVIEW_TIMEOUT` | `skills/peer-review/SKILL.md`, `skills/peer-review/scripts/peer-review.sh` | Timeout budget per reviewer call (default 600s) |
-| `PEER_REVIEW_MAX_ROUNDS` | `skills/peer-review/SKILL.md`, `skills/peer-review/scripts/peer-review.sh` | Maximum round number allowed per session (default 2) |
+| `PEER_REVIEW_MAX_ROUNDS` | `skills/peer-review/SKILL.md`, `skills/peer-review/scripts/peer-review.sh` | Maximum round number allowed per session (default 3) |
 | `peer-review.sh` | `skills/peer-review/scripts/peer-review.sh` | Session lifecycle: `init`, `invoke`, `cleanup` |
 | `prompt.md` | `skills/peer-review/templates/prompt.md` | Shared reviewer prompt template |
 | `reflect` | `skills/reflect/SKILL.md` | Skill name (invoked as `/reflect`) |

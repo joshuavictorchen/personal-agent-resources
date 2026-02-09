@@ -116,7 +116,6 @@ Sessions are stored in `<repo>/.agent-chat/<yymmdd>-<hhmm>-<label>[-N]/` (numeri
 - `round-N-followup.md` — caller's rebuttals, proposed solutions, or both (round 2+)
 - `round-N-invoke.log` — CLI diagnostic output
 - `round-N-error.txt` — only on failure
-- `*.prev-*` — archived artifacts from prior retry attempts for the same round
 
 Sessions persist for inspection. Clean up via:
 

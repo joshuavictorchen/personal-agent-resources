@@ -56,7 +56,7 @@ Structure context.md with these sections (use `##` headings — context.md is em
 
 **`## Open questions`** — Anything unresolved that the reviewer should weigh in on.
 
-**`## Recent conversation`** — Quote the last 2-3 user/agent exchanges from your context window, as close to verbatim as possible. These give the reviewer the immediate context leading to the review request. If earlier exchanges are directly relevant to the review scope, include those too. Omit raw tool output (file contents, grep results) — the reviewer can re-inspect files on its own. Truncate long individual turns with `[...truncated...]` and keep this section under ~100 lines total.
+**`## Recent conversation`** — Quote the last 2-3 user/agent exchanges from your context window, as close to verbatim as possible. These give the reviewer the immediate context leading to the review request. If earlier exchanges are directly relevant to the review scope, include those too. Omit raw tool output (file contents, grep results) — the reviewer can re-inspect files on its own.
 
 Example:
 ```
